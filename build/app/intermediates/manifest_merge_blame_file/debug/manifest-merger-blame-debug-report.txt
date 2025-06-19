@@ -1,0 +1,230 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.samaminifoot.sama_minifoot"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+9        android:targetSdkVersion="35" />
+10    <!--
+11         Required to query activities that can process text, see:
+12         https://developer.android.com/training/package-visibility and
+13         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+14
+15         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin.
+16    -->
+17    <queries>
+17-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:39:5-44:15
+18        <intent>
+18-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:40:9-43:18
+19            <action android:name="android.intent.action.PROCESS_TEXT" />
+19-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:41:13-72
+19-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:41:21-70
+20
+21            <data android:mimeType="text/plain" />
+21-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:42:13-50
+21-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:42:19-48
+22        </intent>
+23    </queries>
+24
+25    <permission
+25-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+26        android:name="com.example.samaminifoot.sama_minifoot.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+26-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+27        android:protectionLevel="signature" />
+27-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+28
+29    <uses-permission android:name="com.example.samaminifoot.sama_minifoot.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+29-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+29-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+30
+31    <application
+32        android:name="android.app.Application"
+32-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:4:9-42
+33        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+33-->[androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\74c1895ee15d4a639000e095e1132bc7\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+34        android:debuggable="true"
+35        android:extractNativeLibs="true"
+36        android:icon="@mipmap/ic_launcher"
+36-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:5:9-43
+37        android:label="sama_minifoot" >
+37-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:3:9-38
+38        <activity
+38-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:6:9-27:20
+39            android:name="com.example.samaminifoot.sama_minifoot.MainActivity"
+39-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:7:13-41
+40            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+40-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:12:13-163
+41            android:exported="true"
+41-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:8:13-36
+42            android:hardwareAccelerated="true"
+42-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:13:13-47
+43            android:launchMode="singleTop"
+43-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:9:13-43
+44            android:taskAffinity=""
+44-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:10:13-36
+45            android:theme="@style/LaunchTheme"
+45-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:11:13-47
+46            android:windowSoftInputMode="adjustResize" >
+46-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:14:13-55
+47
+48            <!--
+49                 Specifies an Android theme to apply to this Activity as soon as
+50                 the Android process has started. This theme is visible to the user
+51                 while the Flutter UI initializes. After that, this theme continues
+52                 to determine the Window background behind the Flutter UI.
+53            -->
+54            <meta-data
+54-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:19:13-22:17
+55                android:name="io.flutter.embedding.android.NormalTheme"
+55-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:20:15-70
+56                android:resource="@style/NormalTheme" />
+56-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:21:15-52
+57
+58            <intent-filter>
+58-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:23:13-26:29
+59                <action android:name="android.intent.action.MAIN" />
+59-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:24:17-68
+59-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:24:25-66
+60
+61                <category android:name="android.intent.category.LAUNCHER" />
+61-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:25:17-76
+61-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:25:27-74
+62            </intent-filter>
+63        </activity>
+64        <!--
+65             Don't delete the meta-data below.
+66             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java
+67        -->
+68        <meta-data
+68-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:30:9-32:33
+69            android:name="flutterEmbedding"
+69-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:31:13-44
+70            android:value="2" />
+70-->C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:32:13-30
+71
+72        <provider
+72-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:9:9-17:20
+73            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
+73-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:10:13-82
+74            android:authorities="com.example.samaminifoot.sama_minifoot.flutter.image_provider"
+74-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-74
+75            android:exported="false"
+75-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:12:13-37
+76            android:grantUriPermissions="true" >
+76-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:13:13-47
+77            <meta-data
+77-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:14:13-16:75
+78                android:name="android.support.FILE_PROVIDER_PATHS"
+78-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:15:17-67
+79                android:resource="@xml/flutter_image_picker_file_paths" />
+79-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:16:17-72
+80        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
+81        <service
+81-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:19:9-31:19
+82            android:name="com.google.android.gms.metadata.ModuleDependencies"
+82-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:20:13-78
+83            android:enabled="false"
+83-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:21:13-36
+84            android:exported="false" >
+84-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:22:13-37
+85            <intent-filter>
+85-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:24:13-26:29
+86                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+86-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:25:17-94
+86-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:25:25-91
+87            </intent-filter>
+88
+89            <meta-data
+89-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:28:13-30:36
+90                android:name="photopicker_activity:0:required"
+90-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:29:17-63
+91                android:value="" />
+91-->[:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:30:17-33
+92        </service>
+93
+94        <activity
+94-->[:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:8:9-11:74
+95            android:name="io.flutter.plugins.urllauncher.WebViewActivity"
+95-->[:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:9:13-74
+96            android:exported="false"
+96-->[:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:10:13-37
+97            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+97-->[:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-71
+98
+99        <uses-library
+99-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:23:9-25:40
+100            android:name="androidx.window.extensions"
+100-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:24:13-54
+101            android:required="false" />
+101-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:25:13-37
+102        <uses-library
+102-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:26:9-28:40
+103            android:name="androidx.window.sidecar"
+103-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:27:13-51
+104            android:required="false" />
+104-->[androidx.window:window:1.2.0] C:\Users\hp\.gradle\caches\transforms-3\ace60e8e30df61681292083d41c836d5\transformed\jetified-window-1.2.0\AndroidManifest.xml:28:13-37
+105
+106        <provider
+106-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:24:9-32:20
+107            android:name="androidx.startup.InitializationProvider"
+107-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:25:13-67
+108            android:authorities="com.example.samaminifoot.sama_minifoot.androidx-startup"
+108-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:26:13-68
+109            android:exported="false" >
+109-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:27:13-37
+110            <meta-data
+110-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+111                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+111-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+112                android:value="androidx.startup" />
+112-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\hp\.gradle\caches\transforms-3\06238db6d1b9fadfc90e00cec994ce15\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+113            <meta-data
+113-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+114                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+115                android:value="androidx.startup" />
+115-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+116        </provider>
+117
+118        <receiver
+118-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+119            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+119-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+120            android:directBootAware="false"
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+121            android:enabled="true"
+121-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+122            android:exported="true"
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+123            android:permission="android.permission.DUMP" >
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+124            <intent-filter>
+124-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+125                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+125-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+126            </intent-filter>
+127            <intent-filter>
+127-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+128                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+128-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+129            </intent-filter>
+130            <intent-filter>
+130-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+131                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+131-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+132            </intent-filter>
+133            <intent-filter>
+133-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+134                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+134-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\hp\.gradle\caches\transforms-3\691ea7010aebab9266cc2c85ade0f719\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+135            </intent-filter>
+136        </receiver>
+137    </application>
+138
+139</manifest>
