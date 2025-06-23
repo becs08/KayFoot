@@ -1,38 +1,66 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../models/user.dart';
+import '../models/auth_result.dart';
 import '../constants/app_constants.dart';
+import 'firebase_auth_service.dart';
 
 class AuthService {
   static const String _userKey = 'user_data';
   static const String _tokenKey = 'auth_token';
-  
+
   // Singleton pattern
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
-  
+
+  final FirebaseAuthService _firebaseAuthService = FirebaseAuthService();
+
   User? _currentUser;
   String? _authToken;
-  
+
   User? get currentUser => _currentUser;
   String? get authToken => _authToken;
   bool get isAuthenticated => _currentUser != null && _authToken != null;
-  
+
   /// Initialise le service d'authentification
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Récupérer l'utilisateur stocké
-    final userData = prefs.getString(_userKey);
-    if (userData != null) {
-      _currentUser = User.fromJson(jsonDecode(userData));
+    print('🔧 Initialisation AuthService...');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Vérifier si l'utilisateur est connecté avec Firebase
+      final firebaseUser = _firebaseAuthService.currentFirebaseUser;
+      if (firebaseUser != null) {
+        print('🔥 Utilisateur Firebase trouvé: ${firebaseUser.uid}');
+
+        // Récupérer les données depuis Firestore
+        final user = await _firebaseAuthService.getCurrentUser();
+        if (user != null) {
+          _currentUser = user;
+          _authToken = await firebaseUser.getIdToken();
+          print('✅ Utilisateur chargé depuis Firestore');
+
+          // Sauvegarder dans les préférences locales
+          await _saveUserData(user, _authToken!);
+        }
+      } else {
+        print('📴 Aucun utilisateur Firebase connecté');
+
+        // Essayer de récupérer depuis les préférences locales
+        final userData = prefs.getString(_userKey);
+        if (userData != null) {
+          _currentUser = User.fromJson(jsonDecode(userData));
+          _authToken = prefs.getString(_tokenKey);
+          print('📱 Utilisateur chargé depuis les préférences locales');
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur lors de l\'initialisation: $e');
     }
-    
-    // Récupérer le token
-    _authToken = prefs.getString(_tokenKey);
   }
-  
+
   /// Inscription d'un nouvel utilisateur
   Future<AuthResult> signUp({
     required String nom,
@@ -50,115 +78,121 @@ class AuthService {
           message: 'Numéro de téléphone invalide',
         );
       }
-      
+
       if (!_validateEmail(email)) {
         return AuthResult(
           success: false,
           message: 'Adresse email invalide',
         );
       }
-      
+
       if (motDePasse.length < AppConstants.minPasswordLength) {
         return AuthResult(
           success: false,
           message: 'Le mot de passe doit contenir au moins ${AppConstants.minPasswordLength} caractères',
         );
       }
-      
-      // Simuler l'inscription (remplacer par un appel API réel)
-      await Future.delayed(Duration(seconds: 2));
-      
-      // Créer l'utilisateur
-      final user = User(
-        id: _generateId(),
+
+      // Inscription via Firebase
+      final result = await _firebaseAuthService.signUp(
+        email: email,
+        password: motDePasse,
         nom: nom,
         telephone: telephone,
-        email: email,
         ville: ville,
         role: role,
-        dateCreation: DateTime.now(),
       );
-      
-      // Générer un token (à remplacer par la réponse du serveur)
-      final token = _generateToken();
-      
-      // Sauvegarder localement
-      await _saveUserData(user, token);
-      
-      return AuthResult(
-        success: true,
-        message: 'Inscription réussie',
-        user: user,
-      );
+
+      if (result.success && result.user != null) {
+        // Obtenir le token
+        final token = await _firebaseAuthService.currentFirebaseUser?.getIdToken();
+        if (token != null) {
+          await _saveUserData(result.user!, token);
+        }
+      }
+
+      return result;
     } catch (e) {
+      print('❌ Erreur dans AuthService.signUp: $e');
       return AuthResult(
         success: false,
         message: 'Erreur lors de l\'inscription: ${e.toString()}',
       );
     }
   }
-  
+
   /// Connexion d'un utilisateur
   Future<AuthResult> signIn({
     required String identifier, // Email ou téléphone
     required String motDePasse,
   }) async {
     try {
-      // Simuler la connexion (remplacer par un appel API réel)
-      await Future.delayed(Duration(seconds: 2));
-      
-      // Utilisateur de test
-      final user = User(
-        id: 'test_user_id',
-        nom: 'Utilisateur Test',
-        telephone: '771234567',
-        email: 'test@example.com',
-        ville: 'Dakar',
-        role: UserRole.joueur,
-        dateCreation: DateTime.now(),
+      // Déterminer si c'est un email ou un téléphone
+      String email = identifier;
+      if (_validatePhone(identifier)) {
+        // Si c'est un téléphone, on devrait chercher l'email associé
+        // Pour l'instant, on suppose que l'utilisateur entre son email
+        return AuthResult(
+          success: false,
+          message: 'Veuillez utiliser votre email pour vous connecter',
+        );
+      }
+
+      // Connexion via Firebase
+      final result = await _firebaseAuthService.signIn(
+        email: email,
+        password: motDePasse,
       );
-      
-      final token = _generateToken();
-      
-      // Sauvegarder localement
-      await _saveUserData(user, token);
-      
-      return AuthResult(
-        success: true,
-        message: 'Connexion réussie',
-        user: user,
-      );
+
+      if (result.success && result.user != null) {
+        // Obtenir le token
+        final token = await _firebaseAuthService.currentFirebaseUser?.getIdToken();
+        if (token != null) {
+          await _saveUserData(result.user!, token);
+        }
+      }
+
+      return result;
     } catch (e) {
+      print('❌ Erreur dans AuthService.signIn: $e');
       return AuthResult(
         success: false,
         message: 'Erreur lors de la connexion: ${e.toString()}',
       );
     }
   }
-  
+
   /// Déconnexion
   Future<void> signOut() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
-    await prefs.remove(_tokenKey);
-    
-    _currentUser = null;
-    _authToken = null;
+    try {
+      // Déconnexion Firebase
+      await _firebaseAuthService.signOut();
+
+      // Effacer les données locales
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_userKey);
+      await prefs.remove(_tokenKey);
+
+      _currentUser = null;
+      _authToken = null;
+
+      print('✅ Déconnexion réussie');
+    } catch (e) {
+      print('❌ Erreur lors de la déconnexion: $e');
+      throw e;
+    }
   }
-  
+
   /// Mise à jour du profil utilisateur
   Future<AuthResult> updateProfile(User updatedUser) async {
     try {
-      // Simuler la mise à jour (remplacer par un appel API réel)
-      await Future.delayed(Duration(seconds: 1));
-      
-      await _saveUserData(updatedUser, _authToken!);
-      
-      return AuthResult(
-        success: true,
-        message: 'Profil mis à jour',
-        user: updatedUser,
-      );
+      final result = await _firebaseAuthService.updateProfile(updatedUser);
+
+      if (result.success && result.user != null) {
+        await _saveUserData(result.user!, _authToken!);
+      }
+
+      return result;
     } catch (e) {
       return AuthResult(
         success: false,
@@ -166,46 +200,90 @@ class AuthService {
       );
     }
   }
-  
+
+  /// Réinitialiser le mot de passe
+  Future<AuthResult> resetPassword(String email) async {
+    try {
+      return await _firebaseAuthService.resetPassword(email);
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Erreur: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Supprimer le compte
+  Future<AuthResult> deleteAccount() async {
+    try {
+      final result = await _firebaseAuthService.deleteAccount();
+
+      if (result.success) {
+        await signOut();
+      }
+
+      return result;
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Erreur: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Recharger l'utilisateur actuel
+  Future<void> reloadCurrentUser() async {
+    try {
+      final user = await _firebaseAuthService.getCurrentUser();
+      if (user != null) {
+        _currentUser = user;
+        final token = await _firebaseAuthService.currentFirebaseUser?.getIdToken();
+        if (token != null) {
+          _authToken = token;
+          await _saveUserData(user, token);
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur lors du rechargement de l\'utilisateur: $e');
+    }
+  }
+
   /// Sauvegarde des données utilisateur
   Future<void> _saveUserData(User user, String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, jsonEncode(user.toJson()));
     await prefs.setString(_tokenKey, token);
-    
+
     _currentUser = user;
     _authToken = token;
+
+    print('💾 Données utilisateur sauvegardées');
   }
-  
+
   /// Validation du numéro de téléphone
   bool _validatePhone(String phone) {
     return RegExp(AppConstants.phonePattern).hasMatch(phone);
   }
-  
+
   /// Validation de l'email
   bool _validateEmail(String email) {
     return RegExp(AppConstants.emailPattern).hasMatch(email);
   }
-  
-  /// Génération d'un ID unique
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
-  }
-  
-  /// Génération d'un token
-  String _generateToken() {
-    return 'token_${DateTime.now().millisecondsSinceEpoch}';
-  }
-}
 
-class AuthResult {
-  final bool success;
-  final String message;
-  final User? user;
-  
-  AuthResult({
-    required this.success,
-    required this.message,
-    this.user,
-  });
+  /// Stream des changements d'authentification
+  Stream<User?> get authStateChanges {
+    return _firebaseAuthService.authStateChanges.map((appUser) {
+      if (appUser != null) {
+        _currentUser = appUser;
+
+        // Le token sera obtenu séparément
+        // via reloadCurrentUser() qui est appelé après la connexion
+
+        return appUser;
+      }
+      _currentUser = null;
+      _authToken = null;
+      return null;
+    });
+  }
 }

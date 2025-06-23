@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">409307077227</string>
+    <string name="google_api_key" translatable="false">AIzaSyAmHkkBHFoSVyCKct7Og7oob40cFFho6rk</string>
+    <string name="google_app_id" translatable="false">1:409307077227:android:3b7ad549443ac1addaaf2e</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAmHkkBHFoSVyCKct7Og7oob40cFFho6rk</string>
+    <string name="google_storage_bucket" translatable="false">sama-minifoot-2024.firebasestorage.app</string>
+    <string name="project_id" translatable="false">sama-minifoot-2024</string>
+</resources>

@@ -21,6 +21,38 @@ class User {
     this.statistiques = const {},
   });
 
+  // 🔥 NOUVELLES MÉTHODES FIREBASE
+  factory User.fromFirestore(Map<String, dynamic> data, String documentId) {
+    return User(
+      id: documentId,
+      nom: data['nom'] ?? '',
+      telephone: data['telephone'] ?? '',
+      email: data['email'] ?? '',
+      ville: data['ville'] ?? '',
+      role: UserRole.values.firstWhere(
+            (e) => e.toString().split('.').last == data['role'],
+        orElse: () => UserRole.joueur,
+      ),
+      photo: data['photo'],
+      dateCreation: data['dateCreation']?.toDate() ?? DateTime.now(),
+      statistiques: Map<String, dynamic>.from(data['statistiques'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'nom': nom,
+      'telephone': telephone,
+      'email': email,
+      'ville': ville,
+      'role': role.toString().split('.').last,
+      'photo': photo,
+      'dateCreation': dateCreation,
+      'statistiques': statistiques,
+    };
+  }
+
+  // Garder les méthodes existantes
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
@@ -29,7 +61,7 @@ class User {
       email: json['email'],
       ville: json['ville'],
       role: UserRole.values.firstWhere(
-        (e) => e.toString() == 'UserRole.${json['role']}',
+            (e) => e.toString() == 'UserRole.${json['role']}',
       ),
       photo: json['photo'],
       dateCreation: DateTime.parse(json['dateCreation']),

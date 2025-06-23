@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=C:\Users\SERIGNE\flutter"
-export "FLUTTER_APPLICATION_PATH=C:\Users\SERIGNE\OneDrive - ORBUS DIGITAL SERVICES\Documents\SIAS\KayFoot"
+export "FLUTTER_ROOT=C:\flutter"
+export "FLUTTER_APPLICATION_PATH=C:\Users\hp\OneDrive\Bureau\Perso\KayFoot"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"
