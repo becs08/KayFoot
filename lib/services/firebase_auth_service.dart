@@ -23,7 +23,7 @@ class FirebaseAuthService {
   factory FirebaseAuthService() => _instance;
   FirebaseAuthService._internal();
 
-  /// Inscription d'un nouvel utilisateur
+  /// Inscription d'un nouvel utilisateur avec structure complète
   Future<AuthResult> signUp({
     required String email,
     required String password,
@@ -33,7 +33,7 @@ class FirebaseAuthService {
     required UserRole role,
   }) async {
     try {
-      print('📝 === DÉBUT INSCRIPTION (Méthode Alternative) ===');
+      print('📝 === DÉBUT INSCRIPTION (Structure Complète) ===');
       print('📝 Email: $email');
       print('📝 Nom: $nom');
       print('📝 Téléphone: $telephone');
@@ -53,9 +53,9 @@ class FirebaseAuthService {
 
       print('✅ Compte Firebase créé avec UID: $uid');
 
-      // Étape 2: Créer le document Firestore
-      print('📝 Création du document utilisateur...');
-      final docCreated = await FirebaseAuthWrapper.createUserDocument(
+      // Étape 2: Créer le document Firestore avec structure complète
+      print('📝 Création du document utilisateur complet...');
+      final docCreated = await _createCompleteUserDocument(
         uid: uid,
         nom: nom,
         email: email,
@@ -71,7 +71,7 @@ class FirebaseAuthService {
         );
       }
 
-      print('✅ Document utilisateur créé');
+      print('✅ Document utilisateur complet créé');
 
       // Étape 3: Récupérer l'utilisateur créé
       final user = User(
@@ -81,8 +81,9 @@ class FirebaseAuthService {
         email: email,
         ville: ville,
         role: role,
+        photo: null, // Photo ajoutée automatiquement
         dateCreation: DateTime.now(),
-        statistiques: {},
+        statistiques: _getDefaultStatistics(role), // Statistiques selon le rôle
       );
 
       return AuthResult(
@@ -99,7 +100,78 @@ class FirebaseAuthService {
     }
   }
 
-  /// Connexion d'un utilisateur
+  /// Crée un document utilisateur avec TOUS les champs requis
+  Future<bool> _createCompleteUserDocument({
+    required String uid,
+    required String nom,
+    required String email,
+    required String telephone,
+    required String ville,
+    required UserRole role,
+  }) async {
+    try {
+      // Préparer les statistiques selon le rôle
+      final statistiques = _getDefaultStatistics(role);
+
+      // Document utilisateur complet
+      final userData = {
+        'nom': nom,
+        'email': email,
+        'telephone': telephone,
+        'ville': ville,
+        'role': role == UserRole.joueur ? 'joueur' : 'gerant',
+        'photo': null,                                    // ← NOUVEAU: Photo par défaut
+        'isActive': true,                                 // ← NOUVEAU: Actif par défaut
+        'statistiques': statistiques,                     // ← NOUVEAU: Stats selon rôle
+        'dateCreation': firestore.FieldValue.serverTimestamp(),
+      };
+
+      print('📊 Document à créer:');
+      print('   - nom: $nom');
+      print('   - email: $email');
+      print('   - telephone: $telephone');
+      print('   - ville: $ville');
+      print('   - role: ${role == UserRole.joueur ? 'joueur' : 'gerant'}');
+      print('   - photo: null (par défaut)');
+      print('   - isActive: true');
+      print('   - statistiques: $statistiques');
+
+      await firestore.FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set(userData);
+
+      print('✅ Document utilisateur complet sauvegardé');
+      return true;
+    } catch (e) {
+      print('❌ Erreur createCompleteUserDocument: $e');
+      return false;
+    }
+  }
+
+  /// Retourne les statistiques par défaut selon le rôle
+  Map<String, dynamic> _getDefaultStatistics(UserRole role) {
+    if (role == UserRole.joueur) {
+      return {
+        'matchsJoues': 0,
+        'tempsJeu': 0,           // en heures
+        'terrainsVisites': 0,
+        'montantDepense': 0,     // en FCFA
+        'dernierMatch': null,
+      };
+    } else if (role == UserRole.gerant) {
+      return {
+        'terrainsGeres': 0,
+        'reservationsRecues': 0,
+        'chiffreAffaires': 0,    // en FCFA
+        'noteMoyenne': 0.0,
+      };
+    } else {
+      return {}; // Fallback
+    }
+  }
+
+  /// Connexion d'un utilisateur (INCHANGÉ)
   Future<AuthResult> signIn({
     required String email,
     required String password,
@@ -126,31 +198,10 @@ class FirebaseAuthService {
       final user = await FirebaseAuthWrapper.getUserFromFirestore(uid);
 
       if (user == null) {
-        print('⚠️ Utilisateur non trouvé dans Firestore, création d\'un profil par défaut...');
-
-        // Créer un profil par défaut
-        await FirebaseAuthWrapper.createUserDocument(
-          uid: uid,
-          nom: 'Utilisateur',
-          email: email,
-          telephone: '',
-          ville: 'Dakar',
-          role: UserRole.joueur,
-        );
-
+        print('⚠️ Utilisateur non trouvé dans Firestore');
         return AuthResult(
-          success: true,
-          message: 'Connexion réussie',
-          user: User(
-            id: uid,
-            nom: 'Utilisateur',
-            telephone: '',
-            email: email,
-            ville: 'Dakar',
-            role: UserRole.joueur,
-            dateCreation: DateTime.now(),
-            statistiques: {},
-          ),
+          success: false,
+          message: 'Profil utilisateur non trouvé',
         );
       }
 
@@ -170,7 +221,7 @@ class FirebaseAuthService {
     }
   }
 
-  /// Déconnexion
+  /// Déconnexion (INCHANGÉ)
   Future<void> signOut() async {
     try {
       await FirebaseAuthWrapper.signOut();
@@ -181,7 +232,7 @@ class FirebaseAuthService {
     }
   }
 
-  /// Récupérer l'utilisateur actuel
+  /// Récupérer l'utilisateur actuel (INCHANGÉ)
   Future<User?> getCurrentUser() async {
     try {
       final uid = FirebaseAuthWrapper.getCurrentUserId();
@@ -194,17 +245,25 @@ class FirebaseAuthService {
     }
   }
 
-  /// Mettre à jour le profil
+  /// Mettre à jour le profil (AMÉLIORÉ)
   Future<AuthResult> updateProfile(User user) async {
     try {
-      await FirebaseAuthWrapper.createUserDocument(
-        uid: user.id,
-        nom: user.nom,
-        email: user.email,
-        telephone: user.telephone,
-        ville: user.ville,
-        role: user.role,
-      );
+      // Mise à jour avec préservation des champs existants
+      final updateData = {
+        'nom': user.nom,
+        'telephone': user.telephone,
+        'ville': user.ville,
+        // Ne pas écraser photo, isActive, statistiques si pas fournis
+      };
+
+      if (user.photo != null) {
+        updateData['photo'] = user.photo!;
+      }
+
+      await firestore.FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.id)
+          .update(updateData);
 
       return AuthResult(
         success: true,
@@ -219,7 +278,7 @@ class FirebaseAuthService {
     }
   }
 
-  /// Stream des changements d'authentification
+  /// Stream des changements d'authentification (INCHANGÉ)
   Stream<User?> get authStateChanges {
     return FirebaseAuthWrapper.authStateChanges().asyncMap((uid) async {
       if (uid == null) return null;
@@ -227,13 +286,13 @@ class FirebaseAuthService {
     });
   }
 
-  /// Obtenir l'utilisateur Firebase actuel (pour compatibilité)
+  /// Obtenir l'utilisateur Firebase actuel (INCHANGÉ)
   String? get currentFirebaseUserId => FirebaseAuthWrapper.getCurrentUserId();
 
-  /// Obtenir l'utilisateur Firebase actuel
+  /// Obtenir l'utilisateur Firebase actuel (INCHANGÉ)
   firebase_auth.User? get currentFirebaseUser => firebase_auth.FirebaseAuth.instance.currentUser;
 
-  /// Réinitialiser le mot de passe
+  /// Réinitialiser le mot de passe (INCHANGÉ)
   Future<AuthResult> resetPassword(String email) async {
     try {
       await firebase_auth.FirebaseAuth.instance.sendPasswordResetEmail(email: email);
@@ -250,7 +309,7 @@ class FirebaseAuthService {
     }
   }
 
-  /// Supprimer le compte
+  /// Supprimer le compte (INCHANGÉ)
   Future<AuthResult> deleteAccount() async {
     try {
       final uid = FirebaseAuthWrapper.getCurrentUserId();
@@ -263,7 +322,6 @@ class FirebaseAuthService {
 
       // Supprimer le document Firestore
       try {
-        // Utiliser une méthode directe pour supprimer le document
         final user = currentFirebaseUser;
         if (user != null) {
           await user.delete();

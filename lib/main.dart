@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart'; // NOUVEAUTÉ : Importation d'App Check
+import 'services/firestore_init_service.dart';
 import 'firebase_options.dart'; // Assurez-vous d'avoir ce fichier
 import 'constants/app_constants.dart';
 import 'models/user.dart'; // Assurez-vous que votre modèle User.dart est correct et correspond à PigeonUserDetails
@@ -19,23 +20,27 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialisé avec succès');
 
-    // NOUVEAUTÉ : Initialisation de Firebase App Check en mode débogage
-    print('🛡️ Initialisation de Firebase App Check...');
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug, // Pour Android, utilisez le mode débogage
-      // Pour iOS, si vous ciblez également cette plateforme, ajoutez :
-      // appleProvider: AppleProvider.debug,
-      // Si vous avez une version web, vous pouvez ajouter une clé reCAPTCHA :
-      // webRecaptchaSiteKey: 'Votre_Clé_reCAPTCHA_v3_pour_Web',
-    );
-    print('✅ Firebase App Check initialisé en mode débogage');
+    print('✅ Firebase initialisé avec succès');
 
     // Initialiser les services
     print('🔧 Initialisation de AuthService...');
     await AuthService().initialize();
     print('✅ AuthService initialisé avec succès');
+
+    if (kDebugMode) {
+      try {
+        print('🚀 === INITIALISATION SAMA MINIFOOT ===');
+
+        // Initialiser seulement les terrains (utilisateurs modifiés manuellement)
+        await FirestoreInitService.initializeTestData();
+
+        print('✅ Toutes les initialisations terminées');
+        print('💡 Structure automatique pour nouveaux utilisateurs activée');
+      } catch (e) {
+        print('⚠️ Erreur lors des initialisations: $e');
+      }
+    }
 
     runApp(SamaMinifoot());
   } catch (e) {
@@ -48,7 +53,7 @@ void main() async {
             children: [
               Icon(Icons.error_outline, size: 64, color: Colors.red),
               SizedBox(height: 16),
-              Text(
+              const Text(
                 'Erreur d\'initialisation',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
