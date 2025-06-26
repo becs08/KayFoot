@@ -6,7 +6,9 @@ import '../../models/reservation.dart';
 import '../../services/terrain_service.dart';
 import '../../services/reservation_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/avis_service.dart';
 import '../booking/booking_screen.dart';
+import '../avis/donner_avis_screen.dart';
 
 class TerrainDetailScreen extends StatefulWidget {
   final Terrain terrain;
@@ -19,7 +21,10 @@ class TerrainDetailScreen extends StatefulWidget {
 
 class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   final PageController _pageController = PageController();
+  final AvisService _avisService = AvisService();
+  
   List<Avis> _avis = [];
+  Map<String, dynamic> _statistiquesAvis = {};
   bool _isLoadingAvis = true;
   int _currentImageIndex = 0;
 
@@ -30,13 +35,21 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   }
 
   Future<void> _loadAvis() async {
+    setState(() {
+      _isLoadingAvis = true;
+    });
+    
     try {
-      final avis = await TerrainService().getAvisTerrain(widget.terrain.id);
+      final avis = await _avisService.getAvisParTerrain(widget.terrain.id);
+      final stats = await _avisService.getStatistiquesAvis(widget.terrain.id);
+      
       setState(() {
         _avis = avis;
+        _statistiquesAvis = stats;
         _isLoadingAvis = false;
       });
     } catch (e) {
+      print('Erreur chargement avis: $e');
       setState(() {
         _isLoadingAvis = false;
       });
@@ -90,7 +103,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
         slivers: [
           // App Bar avec images
           _buildSliverAppBar(),
-          
+
           // Contenu principal
           SliverToBoxAdapter(
             child: Column(
@@ -98,22 +111,22 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               children: [
                 // Informations principales
                 _buildMainInfo(),
-                
+
                 Divider(),
-                
+
                 // Équipements
                 _buildEquipements(),
-                
+
                 Divider(),
-                
+
                 // Disponibilités
                 _buildDisponibilites(),
-                
+
                 Divider(),
-                
+
                 // Avis et commentaires
                 _buildAvis(),
-                
+
                 // Espacement pour le bouton flottant
                 SizedBox(height: 80),
               ],
@@ -121,7 +134,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
           ),
         ],
       ),
-      
+
       // Bouton de réservation
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _navigateToBooking,
@@ -248,9 +261,9 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                       widget.terrain.nom,
                       style: AppConstants.headingStyle.copyWith(fontSize: 22),
                     ),
-                    
+
                     SizedBox(height: AppConstants.smallPadding),
-                    
+
                     Row(
                       children: [
                         Icon(
@@ -272,7 +285,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                   ],
                 ),
               ),
-              
+
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppConstants.mediumPadding,
@@ -292,9 +305,9 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               ),
             ],
           ),
-          
+
           SizedBox(height: AppConstants.mediumPadding),
-          
+
           // Note et avis
           Row(
             children: [
@@ -311,9 +324,9 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                   );
                 }),
               ),
-              
+
               SizedBox(width: AppConstants.smallPadding),
-              
+
               Text(
                 '${widget.terrain.notemoyenne.toStringAsFixed(1)} (${widget.terrain.nombreAvis} avis)',
                 style: AppConstants.bodyStyle.copyWith(
@@ -322,17 +335,17 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               ),
             ],
           ),
-          
+
           SizedBox(height: AppConstants.mediumPadding),
-          
+
           // Description
           Text(
             'Description',
             style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
           ),
-          
+
           SizedBox(height: AppConstants.smallPadding),
-          
+
           Text(
             widget.terrain.description,
             style: AppConstants.bodyStyle.copyWith(
@@ -347,7 +360,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
   Widget _buildEquipements() {
     if (widget.terrain.equipements.isEmpty) return SizedBox();
-    
+
     return Padding(
       padding: EdgeInsets.all(AppConstants.mediumPadding),
       child: Column(
@@ -357,9 +370,9 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
             'Équipements',
             style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
           ),
-          
+
           SizedBox(height: AppConstants.mediumPadding),
-          
+
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -404,7 +417,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
   Widget _buildDisponibilites() {
     if (widget.terrain.disponibilites.isEmpty) return SizedBox();
-    
+
     return Padding(
       padding: EdgeInsets.all(AppConstants.mediumPadding),
       child: Column(
@@ -414,14 +427,14 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
             'Disponibilités',
             style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
           ),
-          
+
           SizedBox(height: AppConstants.mediumPadding),
-          
+
           Column(
             children: widget.terrain.disponibilites.entries.map((entry) {
               final jour = entry.key;
               final creneaux = entry.value;
-              
+
               return Container(
                 margin: EdgeInsets.only(bottom: AppConstants.smallPadding),
                 padding: EdgeInsets.all(AppConstants.mediumPadding),
@@ -441,7 +454,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                         ),
                       ),
                     ),
-                    
+
                     Expanded(
                       child: Wrap(
                         spacing: 8,
@@ -482,60 +495,285 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   }
 
   Widget _buildAvis() {
+    if (_isLoadingAvis) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final nombreAvis = _statistiquesAvis['nombreAvis'] ?? 0;
+    final noteMoyenne = _statistiquesAvis['noteMoyenne'] ?? 0.0;
+
     return Padding(
       padding: EdgeInsets.all(AppConstants.mediumPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // En-tête avec bouton pour donner un avis
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Avis (${widget.terrain.nombreAvis})',
-                style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
+                'Avis et notes',
+                style: AppConstants.subHeadingStyle.copyWith(fontSize: 18),
               ),
-              
-              if (_avis.length > 3)
-                TextButton(
-                  onPressed: () {
-                    // TODO: Voir tous les avis
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Voir tous les avis à venir')),
-                    );
-                  },
-                  child: Text('Voir tout'),
+              ElevatedButton.icon(
+                onPressed: _ouvrirDonnerAvis,
+                icon: const Icon(Icons.rate_review, size: 16),
+                label: const Text('Donner un avis'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
+              ),
             ],
           ),
-          
-          SizedBox(height: AppConstants.mediumPadding),
-          
-          _isLoadingAvis
-              ? Center(child: CircularProgressIndicator())
-              : _avis.isEmpty
-                  ? Text(
-                      'Aucun avis pour le moment',
-                      style: AppConstants.bodyStyle.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                    )
-                  : Column(
-                      children: _avis.take(3).map((avis) {
-                        return _buildAvisCard(avis);
-                      }).toList(),
-                    ),
+
+          const SizedBox(height: 16),
+
+          // Résumé des notes
+          if (nombreAvis > 0) ...[
+            _buildResumeNotes(nombreAvis, noteMoyenne),
+            const SizedBox(height: 20),
+          ],
+
+          // Liste des avis
+          if (_avis.isEmpty)
+            _buildAucunAvis()
+          else ...[
+            _buildListeAvis(),
+            if (_avis.length > 3) _buildVoirTousAvis(),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// Ouvrir l'écran pour donner un avis
+  Future<void> _ouvrirDonnerAvis() async {
+    if (!AuthService().isAuthenticated) {
+      _showLoginDialog();
+      return;
+    }
+
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DonnerAvisScreen(terrain: widget.terrain),
+      ),
+    );
+
+    // Recharger les avis si un avis a été ajouté/modifié
+    if (result == true) {
+      _loadAvis();
+    }
+  }
+
+  /// Widget résumé des notes (type PlayStore)
+  Widget _buildResumeNotes(int nombreAvis, double noteMoyenne) {
+    final repartition = _statistiquesAvis['repartition'] ?? {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          // Note moyenne et étoiles
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                Text(
+                  noteMoyenne.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.primaryColor,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    return Icon(
+                      index < noteMoyenne.floor() ? Icons.star : Icons.star_border,
+                      color: AppConstants.primaryColor,
+                      size: 20,
+                    );
+                  }),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$nombreAvis avis',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Répartition des notes
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [5, 4, 3, 2, 1].map((note) {
+                final count = repartition[note] ?? 0;
+                final percentage = nombreAvis > 0 ? (count / nombreAvis) : 0.0;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Text('$note', style: const TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.star, size: 12, color: AppConstants.primaryColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: percentage,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppConstants.primaryColor,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 20,
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Widget aucun avis
+  Widget _buildAucunAvis() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Icon(
+            Icons.rate_review_outlined,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Aucun avis pour le moment',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Soyez le premier à laisser un avis !',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Widget liste des avis
+  Widget _buildListeAvis() {
+    return Column(
+      children: _avis.take(3).map((avis) => _buildAvisCard(avis)).toList(),
+    );
+  }
+
+  /// Widget voir tous les avis
+  Widget _buildVoirTousAvis() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: TextButton(
+        onPressed: () {
+          _voirTousLesAvis();
+        },
+        child: Text('Voir tous les ${_avis.length} avis'),
+      ),
+    );
+  }
+
+  /// Voir tous les avis (peut ouvrir une nouvelle page ou un bottom sheet)
+  void _voirTousLesAvis() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'Tous les avis (${_avis.length})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: _avis.length,
+                    itemBuilder: (context, index) {
+                      return _buildAvisCard(_avis[index]);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildAvisCard(Avis avis) {
     return Container(
-      margin: EdgeInsets.only(bottom: AppConstants.mediumPadding),
-      padding: EdgeInsets.all(AppConstants.mediumPadding),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,47 +781,54 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
           Row(
             children: [
               CircleAvatar(
-                radius: 20,
+                radius: 18,
                 backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
-                child: Icon(
-                  Icons.person,
-                  color: AppConstants.primaryColor,
-                  size: 20,
+                child: Text(
+                  avis.utilisateurNom.isNotEmpty 
+                      ? avis.utilisateurNom[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                    color: AppConstants.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              
-              SizedBox(width: AppConstants.smallPadding),
-              
+
+              const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Utilisateur', // TODO: Récupérer le nom de l'utilisateur
-                      style: AppConstants.bodyStyle.copyWith(
+                      avis.utilisateurNom,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                     
+                    const SizedBox(height: 4),
+
                     Row(
                       children: [
                         Row(
                           children: List.generate(5, (index) {
                             return Icon(
                               index < avis.note ? Icons.star : Icons.star_border,
-                              color: AppConstants.accentColor,
-                              size: 14,
+                              color: AppConstants.primaryColor,
+                              size: 16,
                             );
                           }),
                         ),
-                        
-                        SizedBox(width: AppConstants.smallPadding),
-                        
+
+                        const SizedBox(width: 8),
+
                         Text(
-                          _formatDate(avis.dateCreation),
-                          style: AppConstants.bodyStyle.copyWith(
+                          _formatDateAvis(avis.dateCreation),
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: Colors.grey[600],
                           ),
                         ),
                       ],
@@ -593,14 +838,15 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               ),
             ],
           ),
-          
-          if (avis.commentaire != null && avis.commentaire!.isNotEmpty) ...[
-            SizedBox(height: AppConstants.smallPadding),
-            
+
+          if (avis.commentaire.isNotEmpty) ...[
+            const SizedBox(height: 12),
+
             Text(
-              avis.commentaire!,
-              style: AppConstants.bodyStyle.copyWith(
-                color: Colors.grey.shade700,
+              avis.commentaire,
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14,
                 height: 1.4,
               ),
             ),
@@ -608,6 +854,29 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Formater la date pour les avis
+  String _formatDateAvis(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return "Aujourd'hui";
+    } else if (difference.inDays == 1) {
+      return "Hier";
+    } else if (difference.inDays < 7) {
+      return "Il y a ${difference.inDays} jours";
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return "Il y a $weeks semaine${weeks > 1 ? 's' : ''}";
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return "Il y a $months mois";
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return "Il y a $years an${years > 1 ? 's' : ''}";
+    }
   }
 
   IconData _getEquipementIcon(String equipement) {
@@ -640,7 +909,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 0) {
       return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
     } else if (difference.inHours > 0) {

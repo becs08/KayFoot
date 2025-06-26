@@ -2,8 +2,10 @@
 // Fichier: lib/services/firestore_init_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sama_minifoot/services/terrain_service.dart';
 import '../models/user.dart';
 import '../models/terrain.dart';
+import '../models/avis.dart';
 
 class FirestoreInitService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,6 +20,10 @@ class FirestoreInitService {
       final terrainsSnapshot = await _firestore.collection('terrains').limit(1).get();
       if (terrainsSnapshot.docs.isNotEmpty) {
         print('✅ Terrains déjà initialisés');
+        
+        // Toujours recréer les avis pour corriger le problème
+        await _createTestAvis();
+        
         await _showIndexInstructions(); // Toujours afficher les instructions index
         return;
       }
@@ -27,6 +33,9 @@ class FirestoreInitService {
 
       // Créer les terrains de test
       await _createTestTerrains();
+
+      // Créer des avis de test
+      await _createTestAvis();
 
       // Afficher les instructions pour les index
       await _showIndexInstructions();
@@ -279,9 +288,135 @@ class FirestoreInitService {
     print('   - terrainId (Ascending) + date (Ascending)');
     print('   - gerantId (Ascending) + statut (Ascending)');
     print('');
-    print('3. Collection "avis" (à créer plus tard):');
+    print('3. Collection "avis":');
     print('   - terrainId (Ascending) + dateCreation (Descending)');
+    print('   - joueurId (Ascending) + dateCreation (Descending)');
+    print('   - reservationId (Ascending) + joueurId (Ascending)');
     print('');
+  }
+
+  /// Crée des avis de test pour les terrains
+  static Future<void> _createTestAvis() async {
+    try {
+      print('💬 Création des avis de test...');
+
+      // Supprimer les anciens avis et recréer avec la bonne structure
+      print('🗑️ Suppression des anciens avis...');
+      final oldAvisSnapshot = await _firestore.collection('avis').get();
+      final batch = _firestore.batch();
+      for (final doc in oldAvisSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      if (oldAvisSnapshot.docs.isNotEmpty) {
+        await batch.commit();
+        print('✅ Anciens avis supprimés');
+      }
+
+      // Récupérer les terrains pour les lier aux avis
+      final terrainsSnapshot = await _firestore.collection('terrains').get();
+      if (terrainsSnapshot.docs.isEmpty) {
+        print('⚠️ Aucun terrain trouvé pour créer des avis');
+        return;
+      }
+
+      // Récupérer quelques utilisateurs pour créer des avis
+      final usersSnapshot = await _firestore.collection('users')
+          .where('role', isEqualTo: 'joueur')
+          .limit(3)
+          .get();
+
+      if (usersSnapshot.docs.isEmpty) {
+        print('⚠️ Aucun joueur trouvé pour créer des avis');
+        return;
+      }
+
+      final List<Avis> avisTest = [];
+      int avisCounter = 1;
+
+      // Créer des avis pour chaque terrain avec le nouveau modèle
+      for (final terrainDoc in terrainsSnapshot.docs.take(3)) {
+        for (final userDoc in usersSnapshot.docs) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          final avis = Avis(
+            id: 'avis_test_$avisCounter',
+            utilisateurId: userDoc.id,
+            utilisateurNom: userData['nom'] ?? 'Utilisateur $avisCounter',
+            terrainId: terrainDoc.id,
+            note: (3 + (avisCounter % 3)), // Notes entre 3 et 5
+            commentaire: _getRandomComment(avisCounter),
+            dateCreation: DateTime.now().subtract(Duration(days: avisCounter * 2)),
+          );
+          avisTest.add(avis);
+          avisCounter++;
+        }
+      }
+
+      // Sauvegarder les avis dans Firestore
+      final newBatch = _firestore.batch();
+      for (final avis in avisTest) {
+        final docRef = _firestore.collection('avis').doc(avis.id);
+        newBatch.set(docRef, avis.toFirestore());
+      }
+
+      await newBatch.commit();
+
+      print('✅ ${avisTest.length} avis de test créés');
+
+      // Mettre à jour les notes moyennes des terrains
+      await _updateTerrainsRatings();
+
+    } catch (e) {
+      print('❌ Erreur lors de la création des avis: $e');
+    }
+  }
+
+  /// Met à jour les notes moyennes des terrains basées sur les avis
+  static Future<void> _updateTerrainsRatings() async {
+    try {
+      final terrainsSnapshot = await _firestore.collection('terrains').get();
+
+      for (final terrainDoc in terrainsSnapshot.docs) {
+        final avisSnapshot = await _firestore
+            .collection('avis')
+            .where('terrainId', isEqualTo: terrainDoc.id)
+            .get();
+
+        if (avisSnapshot.docs.isNotEmpty) {
+          final notes = avisSnapshot.docs
+              .map((doc) => (doc.data()['note'] as int).toDouble())
+              .toList();
+
+          final noteMoyenne = notes.reduce((a, b) => a + b) / notes.length;
+
+          await terrainDoc.reference.update({
+            'noteMoyenne': double.parse(noteMoyenne.toStringAsFixed(1)),
+            'nombreAvis': notes.length,
+          });
+        }
+      }
+
+      print('✅ Notes moyennes des terrains mises à jour');
+    } catch (e) {
+      print('❌ Erreur lors de la mise à jour des notes: $e');
+    }
+  }
+
+  /// Retourne un commentaire aléatoire pour les avis de test
+  static String _getRandomComment(int index) {
+    final comments = [
+      'Excellent terrain, très bien entretenu !',
+      'Bon terrain mais pourrait être mieux éclairé.',
+      'Parfait pour jouer entre amis, recommandé !',
+      'Terrain correct, vestiaires propres.',
+      'Très bon accueil, terrain en bon état.',
+      'Prix raisonnable, qualité correcte.',
+      'Super expérience, on reviendra !',
+      'Terrain un peu dur mais jouable.',
+      'Excellente infrastructure, très propre.',
+      'Bon rapport qualité-prix.',
+    ];
+
+    return comments[index % comments.length];
   }
 }
 

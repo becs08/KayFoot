@@ -1,63 +1,52 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Avis {
   final String id;
-  final String joueurId;
+  final String utilisateurId;
+  final String utilisateurNom;
   final String terrainId;
-  final String reservationId;
-  final int note;
-  final String? commentaire;
+  final int note; // 1 à 5 étoiles
+  final String commentaire;
   final DateTime dateCreation;
 
   Avis({
     required this.id,
-    required this.joueurId,
+    required this.utilisateurId,
+    required this.utilisateurNom,
     required this.terrainId,
-    required this.reservationId,
     required this.note,
-    this.commentaire,
+    required this.commentaire,
     required this.dateCreation,
   });
 
-  factory Avis.fromJson(Map<String, dynamic> json) {
+  /// Créer depuis Firestore
+  factory Avis.fromFirestore(Map<String, dynamic> data, String documentId) {
     return Avis(
-      id: json['id'],
-      joueurId: json['joueurId'],
-      terrainId: json['terrainId'],
-      reservationId: json['reservationId'],
-      note: json['note'],
-      commentaire: json['commentaire'],
-      dateCreation: DateTime.parse(json['dateCreation']),
+      id: documentId,
+      utilisateurId: data['utilisateurId'] ?? '',
+      utilisateurNom: data['utilisateurNom'] ?? 'Utilisateur',
+      terrainId: data['terrainId'] ?? '',
+      note: data['note'] ?? 1,
+      commentaire: data['commentaire'] ?? '',
+      dateCreation: (data['dateCreation'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toJson() {
+  /// Convertir pour Firestore
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
-      'joueurId': joueurId,
+      'utilisateurId': utilisateurId,
+      'utilisateurNom': utilisateurNom,
       'terrainId': terrainId,
-      'reservationId': reservationId,
       'note': note,
       'commentaire': commentaire,
-      'dateCreation': dateCreation.toIso8601String(),
+      'dateCreation': Timestamp.fromDate(dateCreation),
     };
   }
 
-  Avis copyWith({
-    String? id,
-    String? joueurId,
-    String? terrainId,
-    String? reservationId,
-    int? note,
-    String? commentaire,
-    DateTime? dateCreation,
-  }) {
-    return Avis(
-      id: id ?? this.id,
-      joueurId: joueurId ?? this.joueurId,
-      terrainId: terrainId ?? this.terrainId,
-      reservationId: reservationId ?? this.reservationId,
-      note: note ?? this.note,
-      commentaire: commentaire ?? this.commentaire,
-      dateCreation: dateCreation ?? this.dateCreation,
-    );
-  }
+  /// Obtenir les étoiles pleines
+  int get etoilesPleine => note;
+  
+  /// Obtenir les étoiles vides
+  int get etoilesVide => 5 - note;
 }

@@ -43,10 +43,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
       if (user != null) {
         final reservations = await ReservationService().getUserReservations(user.id);
         final now = DateTime.now();
-        
+
         setState(() {
           _allReservations = reservations;
-          
+
           _activeReservations = reservations.where((reservation) {
             final reservationDateTime = DateTime(
               reservation.date.year,
@@ -55,11 +55,11 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               int.parse(reservation.heureDebut.split(':')[0]),
               int.parse(reservation.heureDebut.split(':')[1]),
             );
-            
-            return reservationDateTime.isAfter(now) && 
+
+            return reservationDateTime.isAfter(now) &&
                    reservation.statut != StatutReservation.annulee;
           }).toList();
-          
+
           _pastReservations = reservations.where((reservation) {
             final reservationDateTime = DateTime(
               reservation.date.year,
@@ -68,12 +68,12 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               int.parse(reservation.heureDebut.split(':')[0]),
               int.parse(reservation.heureDebut.split(':')[1]),
             );
-            
-            return reservationDateTime.isBefore(now) || 
+
+            return reservationDateTime.isBefore(now) ||
                    reservation.statut == StatutReservation.annulee ||
                    reservation.statut == StatutReservation.terminee;
           }).toList();
-          
+
           _isLoading = false;
         });
       }
@@ -119,7 +119,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     if (confirmed == true) {
       try {
         final result = await ReservationService().cancelReservation(reservation.id);
-        
+
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -145,7 +145,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(
+            const Tab(
               text: 'Toutes',
               icon: Icon(Icons.list),
             ),
@@ -158,9 +158,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               icon: Icon(Icons.history),
             ),
           ],
-          labelColor: AppConstants.primaryColor,
-          unselectedLabelColor: Colors.grey.shade600,
-          indicatorColor: AppConstants.primaryColor,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white,
+          indicatorColor: Colors.white,
         ),
       ),
       body: _isLoading
@@ -228,18 +228,18 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             size: 64,
             color: Colors.grey.shade400,
           ),
-          
+
           SizedBox(height: AppConstants.mediumPadding),
-          
+
           Text(
             title,
             style: AppConstants.subHeadingStyle.copyWith(
               color: Colors.grey.shade600,
             ),
           ),
-          
+
           SizedBox(height: AppConstants.smallPadding),
-          
+
           Text(
             subtitle,
             style: AppConstants.bodyStyle.copyWith(
@@ -247,10 +247,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           if (showAll || (!showPast)) ...[
             SizedBox(height: AppConstants.largePadding),
-            
+
             ElevatedButton(
               onPressed: () {
                 // Naviguer vers la recherche de terrains
@@ -288,7 +288,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                       future: TerrainService().getTerrainById(reservation.terrainId),
                       builder: (context, snapshot) {
                         final terrain = snapshot.data;
-                        
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -296,9 +296,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                               terrain?.nom ?? 'Terrain inconnu',
                               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
                             ),
-                            
+
                             SizedBox(height: 4),
-                            
+
                             if (terrain != null)
                               Text(
                                 terrain.ville,
@@ -312,13 +312,13 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                       },
                     ),
                   ),
-                  
+
                   _buildStatusChip(reservation.statut),
                 ],
               ),
-              
+
               SizedBox(height: AppConstants.mediumPadding),
-              
+
               Row(
                 children: [
                   Icon(
@@ -331,9 +331,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                     _formatDate(reservation.date),
                     style: AppConstants.bodyStyle.copyWith(fontSize: 13),
                   ),
-                  
+
                   SizedBox(width: AppConstants.mediumPadding),
-                  
+
                   Icon(
                     Icons.access_time,
                     size: 16,
@@ -346,9 +346,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                   ),
                 ],
               ),
-              
+
               SizedBox(height: AppConstants.smallPadding),
-              
+
               Row(
                 children: [
                   Icon(
@@ -364,9 +364,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  
+
                   SizedBox(width: AppConstants.mediumPadding),
-                  
+
                   Icon(
                     Icons.account_balance_wallet,
                     size: 16,
@@ -379,10 +379,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                   ),
                 ],
               ),
-              
+
               if (!showPast && reservation.statut == StatutReservation.payee) ...[
                 SizedBox(height: AppConstants.mediumPadding),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -396,9 +396,9 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(width: AppConstants.smallPadding),
-                    
+
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
@@ -504,7 +504,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         'jan', 'fév', 'mar', 'avr', 'mai', 'jun',
         'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'
       ];
-      
+
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     }
   }
