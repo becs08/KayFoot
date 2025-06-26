@@ -5,6 +5,8 @@ import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../services/terrain_service.dart';
 import '../../services/reservation_service.dart';
+import '../../services/statistics_service.dart';
+import '../../services/pdf_receipt_service.dart';
 
 class ReservationDetailScreen extends StatefulWidget {
   final Reservation reservation;
@@ -18,6 +20,9 @@ class ReservationDetailScreen extends StatefulWidget {
 class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   Terrain? _terrain;
   bool _isLoading = true;
+  bool _isDownloading = false;
+  final StatisticsService _statsService = StatisticsService();
+  final PdfReceiptService _receiptService = PdfReceiptService();
 
   @override
   void initState() {
@@ -78,7 +83,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     if (confirmed == true) {
       try {
         final result = await ReservationService().cancelReservation(widget.reservation.id);
-        
+
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -105,12 +110,41 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     );
   }
 
-  void _shareReservation() {
-    // TODO: Implémenter le partage
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Fonctionnalité de partage à venir')),
-    );
+  Future<void> _downloadReceipt() async {
+    if (_terrain == null) {
+      _showError('Informations du terrain non disponibles');
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      final success = await _receiptService.shareReceiptPDF(
+        reservation: widget.reservation,
+        terrain: _terrain!,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reçu PDF partagé avec succès'),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors de la génération du reçu PDF');
+      }
+    } catch (e) {
+      _showError('Erreur lors du téléchargement du reçu PDF');
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+    }
   }
+
 
   bool _canCancelReservation() {
     if (widget.reservation.statut != StatutReservation.payee) {
@@ -129,17 +163,18 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     return reservationDateTime.difference(now).inHours >= 2;
   }
 
+  bool _isReservationActive() {
+    // Une réservation est considérée comme active si elle est payée ou confirmée
+    // et qu'elle n'est pas annulée ou terminée
+    return widget.reservation.statut == StatutReservation.payee ||
+           widget.reservation.statut == StatutReservation.confirmee;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Détails de la réservation'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share),
-            onPressed: _shareReservation,
-          ),
-        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -150,31 +185,31 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 children: [
                   // Statut de la réservation
                   _buildStatusCard(),
-                  
+
                   SizedBox(height: AppConstants.mediumPadding),
-                  
+
                   // Informations du terrain
                   _buildTerrainInfo(),
-                  
+
                   SizedBox(height: AppConstants.mediumPadding),
-                  
+
                   // Détails de la réservation
                   _buildReservationDetails(),
-                  
+
                   SizedBox(height: AppConstants.mediumPadding),
-                  
+
                   // Informations de paiement
                   _buildPaymentInfo(),
-                  
+
                   SizedBox(height: AppConstants.mediumPadding),
-                  
+
                   // QR Code (si applicable)
                   if (widget.reservation.statut == StatutReservation.payee ||
                       widget.reservation.statut == StatutReservation.confirmee)
                     _buildQRCode(),
-                  
+
                   SizedBox(height: AppConstants.largePadding),
-                  
+
                   // Boutons d'action
                   _buildActionButtons(),
                 ],
@@ -227,9 +262,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               color: color,
               size: 32,
             ),
-            
+
             SizedBox(width: AppConstants.mediumPadding),
-            
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,9 +276,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                       fontSize: 16,
                     ),
                   ),
-                  
+
                   SizedBox(height: 4),
-                  
+
                   Text(
                     message,
                     style: AppConstants.bodyStyle.copyWith(
@@ -280,9 +315,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               'Terrain',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             Row(
               children: [
                 Container(
@@ -298,9 +333,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     size: 30,
                   ),
                 ),
-                
+
                 SizedBox(width: AppConstants.mediumPadding),
-                
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,9 +344,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         _terrain!.nom,
                         style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
                       ),
-                      
+
                       SizedBox(height: 4),
-                      
+
                       Row(
                         children: [
                           Icon(
@@ -331,24 +366,38 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: 4),
-                      
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.star,
-                            size: 14,
-                            color: AppConstants.accentColor,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            '${_terrain!.notemoyenne.toStringAsFixed(1)} (${_terrain!.nombreAvis} avis)',
-                            style: AppConstants.bodyStyle.copyWith(
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _statsService.calculateTerrainStats(_terrain!.id),
+                        builder: (context, snapshot) {
+                          final noteMoyenne = snapshot.hasData && snapshot.data!['noteMoyenne'] != null && snapshot.data!['noteMoyenne'] > 0
+                              ? snapshot.data!['noteMoyenne'] as double
+                              : 0.0;
+                          final nombreAvis = snapshot.hasData && snapshot.data!['nombreAvis'] != null
+                              ? snapshot.data!['nombreAvis'] as int
+                              : 0;
+
+                          return Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 14,
+                                color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                noteMoyenne > 0
+                                    ? '${noteMoyenne.toStringAsFixed(1)} ($nombreAvis avis)'
+                                    : 'Aucun avis',
+                                style: AppConstants.bodyStyle.copyWith(
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -372,39 +421,39 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               'Détails de la réservation',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             _buildDetailRow(
               icon: Icons.confirmation_number,
               label: 'N° de réservation',
               value: widget.reservation.id,
             ),
-            
+
             _buildDetailRow(
               icon: Icons.calendar_today,
               label: 'Date',
               value: _formatDate(widget.reservation.date),
             ),
-            
+
             _buildDetailRow(
               icon: Icons.access_time,
               label: 'Créneau',
               value: '${widget.reservation.heureDebut} - ${widget.reservation.heureFin}',
             ),
-            
+
             _buildDetailRow(
               icon: Icons.schedule,
               label: 'Durée',
               value: '1 heure',
             ),
-            
+
             _buildDetailRow(
               icon: Icons.event_available,
               label: 'Réservé le',
               value: _formatDateTime(widget.reservation.dateCreation),
             ),
-            
+
             if (widget.reservation.dateAnnulation != null)
               _buildDetailRow(
                 icon: Icons.cancel,
@@ -428,21 +477,21 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               'Informations de paiement',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
-            SizedBox(height: AppConstants.mediumPadding),
-            
+
+            const SizedBox(height: AppConstants.mediumPadding),
+
             _buildDetailRow(
               icon: Icons.account_balance_wallet,
               label: 'Mode de paiement',
               value: _getPaymentMethodName(widget.reservation.modePaiement),
             ),
-            
+
             _buildDetailRow(
               icon: Icons.attach_money,
               label: 'Montant',
               value: '${widget.reservation.montant.toInt()} FCFA',
             ),
-            
+
             if (widget.reservation.transactionId != null)
               _buildDetailRow(
                 icon: Icons.receipt,
@@ -465,9 +514,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               'QR Code d\'accès',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -483,9 +532,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 backgroundColor: Colors.white,
               ),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             Container(
               padding: EdgeInsets.all(AppConstants.mediumPadding),
               decoration: BoxDecoration(
@@ -494,12 +543,12 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.info,
                     color: AppConstants.accentColor,
                     size: 20,
                   ),
-                  SizedBox(width: AppConstants.smallPadding),
+                  const SizedBox(width: AppConstants.smallPadding),
                   Expanded(
                     child: Text(
                       'Présentez ce QR code à l\'entrée du terrain pour confirmer votre accès.',
@@ -512,9 +561,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 ],
               ),
             ),
-            
-            SizedBox(height: AppConstants.smallPadding),
-            
+
+            const SizedBox(height: AppConstants.smallPadding),
+
             Text(
               'Code: ${widget.reservation.qrCode}',
               style: AppConstants.bodyStyle.copyWith(
@@ -531,7 +580,8 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
   Widget _buildActionButtons() {
     final canCancel = _canCancelReservation();
-    
+    final isActiveReservation = _isReservationActive();
+
     return Column(
       children: [
         if (canCancel)
@@ -548,29 +598,35 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               ),
             ),
           ),
-        
+
         if (canCancel) SizedBox(height: AppConstants.smallPadding),
-        
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              // TODO: Télécharger le reçu
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Téléchargement du reçu à venir')),
-              );
-            },
-            icon: Icon(Icons.download),
-            label: Text('Télécharger le reçu'),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12),
+
+        // Bouton de partage uniquement pour les réservations actives
+        if (isActiveReservation)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isDownloading ? null : _downloadReceipt,
+              icon: _isDownloading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.share),
+              label: Text(_isDownloading ? 'Génération...' : 'Partager le reçu'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
             ),
           ),
-        ),
-        
+
         if (!canCancel && widget.reservation.statut == StatutReservation.payee) ...[
-          SizedBox(height: AppConstants.smallPadding),
-          
+          const SizedBox(height: AppConstants.smallPadding),
+
           Text(
             'Annulation impossible moins de 2h avant le match',
             style: AppConstants.bodyStyle.copyWith(
@@ -599,9 +655,9 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             size: 20,
             color: Colors.grey.shade600,
           ),
-          
+
           SizedBox(width: AppConstants.mediumPadding),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +669,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     fontSize: 12,
                   ),
                 ),
-                
+
                 Text(
                   value,
                   style: AppConstants.bodyStyle.copyWith(
@@ -634,15 +690,15 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
       'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
     ];
-    
+
     const days = [
-      'lundi', 'mardi', 'mercredi', 'jeudi', 
+      'lundi', 'mardi', 'mercredi', 'jeudi',
       'vendredi', 'samedi', 'dimanche'
     ];
-    
+
     final dayName = days[date.weekday - 1];
     final monthName = months[date.month - 1];
-    
+
     return '${dayName.substring(0, 1).toUpperCase()}${dayName.substring(1)} ${date.day} $monthName ${date.year}';
   }
 

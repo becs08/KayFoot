@@ -5,9 +5,14 @@ import '../../services/reservation_service.dart';
 import '../../services/terrain_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/terrain.dart';
+import '../terrain/list_screen.dart';
 import 'reservation_detail_screen.dart';
 
 class ReservationsScreen extends StatefulWidget {
+  final VoidCallback? onNavigateToTerrains;
+  
+  const ReservationsScreen({Key? key, this.onNavigateToTerrains}) : super(key: key);
+  
   @override
   _ReservationsScreenState createState() => _ReservationsScreenState();
 }
@@ -23,7 +28,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadReservations();
   }
 
@@ -94,6 +99,20 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     );
   }
 
+  void _navigateToTerrains() {
+    if (widget.onNavigateToTerrains != null) {
+      // Utiliser le callback du parent pour changer d'onglet
+      widget.onNavigateToTerrains!();
+    } else {
+      // Fallback : naviguer directement vers la liste des terrains
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TerrainListScreen(),
+        ),
+      );
+    }
+  }
+
   Future<void> _cancelReservation(Reservation reservation) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -145,10 +164,6 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            const Tab(
-              text: 'Toutes',
-              icon: Icon(Icons.list),
-            ),
             Tab(
               text: 'Actives (${_activeReservations.length})',
               icon: Icon(Icons.schedule),
@@ -168,7 +183,6 @@ class _ReservationsScreenState extends State<ReservationsScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildReservationsList(_allReservations, showAll: true),
                 _buildReservationsList(_activeReservations),
                 _buildReservationsList(_pastReservations, showPast: true),
               ],
@@ -178,11 +192,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
 
   Widget _buildReservationsList(
     List<Reservation> reservations, {
-    bool showAll = false,
     bool showPast = false,
   }) {
     if (reservations.isEmpty) {
-      return _buildEmptyState(showAll, showPast);
+      return _buildEmptyState(showPast);
     }
 
     return RefreshIndicator(
@@ -200,16 +213,12 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     );
   }
 
-  Widget _buildEmptyState(bool showAll, bool showPast) {
+  Widget _buildEmptyState(bool showPast) {
     String title;
     String subtitle;
     IconData icon;
 
-    if (showAll) {
-      title = 'Aucune réservation';
-      subtitle = 'Vous n\'avez pas encore de réservations';
-      icon = Icons.event_note;
-    } else if (showPast) {
+    if (showPast) {
       title = 'Aucun historique';
       subtitle = 'Aucune réservation passée trouvée';
       icon = Icons.history;
@@ -248,14 +257,11 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             textAlign: TextAlign.center,
           ),
 
-          if (showAll || (!showPast)) ...[
+          if (!showPast) ...[
             SizedBox(height: AppConstants.largePadding),
 
             ElevatedButton(
-              onPressed: () {
-                // Naviguer vers la recherche de terrains
-                DefaultTabController.of(context)?.animateTo(1); // Onglet terrains
-              },
+              onPressed: _navigateToTerrains,
               child: Text('Réserver un terrain'),
             ),
           ],
@@ -265,8 +271,21 @@ class _ReservationsScreenState extends State<ReservationsScreen>
   }
 
   Widget _buildReservationCard(Reservation reservation, {bool showPast = false}) {
+    // Déterminer si la réservation est expirée
+    final now = DateTime.now();
+    final reservationDateTime = DateTime(
+      reservation.date.year,
+      reservation.date.month,
+      reservation.date.day,
+      int.parse(reservation.heureDebut.split(':')[0]),
+      int.parse(reservation.heureDebut.split(':')[1]),
+    );
+    final isExpired = reservationDateTime.isBefore(now);
+
     return Card(
       margin: EdgeInsets.only(bottom: AppConstants.mediumPadding),
+      // Assombrir légèrement les cartes des réservations passées
+      color: showPast ? Colors.grey.shade50 : Colors.white,
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
@@ -276,46 +295,56 @@ class _ReservationsScreenState extends State<ReservationsScreen>
           );
         },
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
-        child: Padding(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: FutureBuilder<Terrain?>(
-                      future: TerrainService().getTerrainById(reservation.terrainId),
-                      builder: (context, snapshot) {
-                        final terrain = snapshot.data;
+        child: Container(
+          // Ajouter une bordure pour différencier visuellement
+          decoration: showPast ? BoxDecoration(
+            borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+          ) : null,
+          child: Padding(
+            padding: EdgeInsets.all(AppConstants.mediumPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: FutureBuilder<Terrain?>(
+                        future: TerrainService().getTerrainById(reservation.terrainId),
+                        builder: (context, snapshot) {
+                          final terrain = snapshot.data;
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              terrain?.nom ?? 'Terrain inconnu',
-                              style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
-                            ),
-
-                            SizedBox(height: 4),
-
-                            if (terrain != null)
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                terrain.ville,
-                                style: AppConstants.bodyStyle.copyWith(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
+                                terrain?.nom ?? 'Terrain inconnu',
+                                style: AppConstants.subHeadingStyle.copyWith(
+                                  fontSize: 16,
+                                  // Texte plus clair pour les réservations passées
+                                  color: showPast ? Colors.grey.shade600 : null,
                                 ),
                               ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
 
-                  _buildStatusChip(reservation.statut),
-                ],
-              ),
+                              SizedBox(height: 4),
+
+                              if (terrain != null)
+                                Text(
+                                  terrain.ville,
+                                  style: AppConstants.bodyStyle.copyWith(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+
+                    _buildStatusChip(reservation.statut),
+                  ],
+                ),
 
               SizedBox(height: AppConstants.mediumPadding),
 
@@ -420,6 +449,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }

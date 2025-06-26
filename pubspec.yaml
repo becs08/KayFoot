@@ -41,6 +41,14 @@ dependencies:
 
   # Utilities
   url_launcher: ^6.2.1
+  
+  # PDF Generation
+  pdf: ^3.10.4
+  printing: ^5.11.0
+  
+  # File Operations
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
 
 dev_dependencies:
   flutter_test:

@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final List<Terrain> _featuredTerrains = [];
   bool _isLoading = true;
-  
+
   // Statistiques dynamiques
   final StatisticsService _statsService = StatisticsService();
   Map<String, dynamic> _userStats = {};
@@ -77,7 +77,13 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildHomeTab(),
           TerrainListScreen(),
-          ReservationsScreen(),
+          ReservationsScreen(
+            onNavigateToTerrains: () {
+              setState(() {
+                _currentIndex = 1; // Onglet terrains
+              });
+            },
+          ),
           ProfileScreen(),
         ],
       ),
@@ -91,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppConstants.primaryColor,
         unselectedItemColor: Colors.grey,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Accueil',
@@ -502,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final noteMoyenne = snapshot.hasData && snapshot.data!['noteMoyenne'] != null && snapshot.data!['noteMoyenne'] > 0
                               ? snapshot.data!['noteMoyenne'] as double
                               : 0.0;
-                          
+
                           return Row(
                             children: [
                               Icon(
@@ -618,7 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final matchsJoues = _userStats['matchsJoues'] ?? 0;
     final tempsJeuMinutes = _userStats['tempsJeuMinutes'] ?? 0;
     final terrainsVisites = _userStats['terrainsVisites'] ?? 0;
-    
+
     return Row(
       children: [
         Expanded(

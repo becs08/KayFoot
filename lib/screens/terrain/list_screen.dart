@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../services/terrain_service.dart';
+import '../../services/statistics_service.dart';
 import '../../models/terrain.dart';
 import 'detail_screen.dart';
 
 class TerrainListScreen extends StatefulWidget {
+  const TerrainListScreen({super.key});
+
   @override
   _TerrainListScreenState createState() => _TerrainListScreenState();
 }
@@ -12,6 +15,7 @@ class TerrainListScreen extends StatefulWidget {
 class _TerrainListScreenState extends State<TerrainListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TerrainService _terrainService = TerrainService();
+  final StatisticsService _statsService = StatisticsService();
 
   List<Terrain> _allTerrains = [];
   List<Terrain> _filteredTerrains = [];
@@ -101,7 +105,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppConstants.mediumRadius),
         ),
@@ -114,10 +118,10 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Terrains disponibles'),
+        title: const Text('Terrains disponibles'),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list),
             onPressed: _showFilterBottomSheet,
           ),
         ],
@@ -133,13 +137,13 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
           // Liste des terrains
           Expanded(
             child: _isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator())
                 : _filteredTerrains.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
                         onRefresh: _loadTerrains,
                         child: ListView.builder(
-                          padding: EdgeInsets.all(AppConstants.mediumPadding),
+                          padding: const EdgeInsets.all(AppConstants.mediumPadding),
                           itemCount: _filteredTerrains.length,
                           itemBuilder: (context, index) {
                             return _buildTerrainCard(_filteredTerrains[index]);
@@ -154,7 +158,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      padding: EdgeInsets.all(AppConstants.mediumPadding),
+      padding: const EdgeInsets.all(AppConstants.mediumPadding),
       color: Colors.grey.shade50,
       child: Row(
         children: [
@@ -163,10 +167,10 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Rechercher un terrain...',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear),
+                        icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
                         },
@@ -178,7 +182,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.mediumPadding,
                   vertical: AppConstants.smallPadding,
                 ),
@@ -192,7 +196,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
 
   Widget _buildStatsBar() {
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.mediumPadding,
         vertical: AppConstants.smallPadding,
       ),
@@ -215,7 +219,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
               color: Colors.grey.shade700,
               fontSize: 12,
             ),
-            items: [
+            items: const [
               DropdownMenuItem(value: 'nom', child: Text('Nom A-Z')),
               DropdownMenuItem(value: 'prix', child: Text('Prix croissant')),
               DropdownMenuItem(value: 'note', child: Text('Mieux notés')),
@@ -358,30 +362,42 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
 
                         Row(
                           children: [
-                            // Note
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  size: 14,
-                                  color: AppConstants.accentColor,
-                                ),
-                                SizedBox(width: 2),
-                                Text(
-                                  terrain.notemoyenne.toStringAsFixed(1),
-                                  style: AppConstants.bodyStyle.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  ' (${terrain.nombreAvis})',
-                                  style: AppConstants.bodyStyle.copyWith(
-                                    fontSize: 10,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
+                            // Note dynamique
+                            FutureBuilder<Map<String, dynamic>>(
+                              future: _statsService.calculateTerrainStats(terrain.id),
+                              builder: (context, snapshot) {
+                                final noteMoyenne = snapshot.hasData && snapshot.data!['noteMoyenne'] != null && snapshot.data!['noteMoyenne'] > 0
+                                    ? snapshot.data!['noteMoyenne'] as double
+                                    : 0.0;
+                                final nombreAvis = snapshot.hasData && snapshot.data!['nombreAvis'] != null
+                                    ? snapshot.data!['nombreAvis'] as int
+                                    : 0;
+
+                                return Row(
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      size: 14,
+                                      color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
+                                    ),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      noteMoyenne > 0 ? noteMoyenne.toStringAsFixed(1) : 'N/A',
+                                      style: AppConstants.bodyStyle.copyWith(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' ($nombreAvis)',
+                                      style: AppConstants.bodyStyle.copyWith(
+                                        fontSize: 10,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
 
                             Spacer(),

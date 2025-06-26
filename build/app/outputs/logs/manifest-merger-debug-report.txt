@@ -1,7 +1,7 @@
 -- Merging decision tree log ---
 application
-INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:2:5-33:19
-INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:2:5-33:19
+INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:7:5-38:19
+INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:7:5-38:19
 MERGED from [:firebase_app_check] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\firebase_app_check\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
 MERGED from [:firebase_app_check] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\firebase_app_check\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
 MERGED from [:cloud_firestore] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\cloud_firestore\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
@@ -32,6 +32,8 @@ MERGED from [:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\bu
 MERGED from [:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:8:5-32:19
 MERGED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-12:19
 MERGED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-12:19
+MERGED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-17:19
+MERGED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-17:19
 MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\hp\.gradle\caches\transforms-3\75902d5cb099d50814570d4b0686fbe5\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:7:5-8:19
 MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\hp\.gradle\caches\transforms-3\75902d5cb099d50814570d4b0686fbe5\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:7:5-8:19
 MERGED from [com.google.firebase:firebase-common:20.4.3] C:\Users\hp\.gradle\caches\transforms-3\14cfdc1f345f3dd4d9749a487701b18f\transformed\jetified-firebase-common-20.4.3\AndroidManifest.xml:22:5-39:19
@@ -65,17 +67,17 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\hp
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\hp\.gradle\caches\transforms-3\4c9be0c5e40b6223a158bac62b6e349b\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:label
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:3:9-38
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:8:9-38
 	android:icon
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:5:9-43
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:10:9-43
 	android:name
 		INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:4:9-42
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:9:9-42
 manifest
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-45:12
-INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-45:12
-INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-45:12
-INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-45:12
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-50:12
+INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-50:12
+INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-50:12
+INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:1-50:12
 MERGED from [:shared_preferences_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\shared_preferences_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
 MERGED from [:firebase_app_check] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\firebase_app_check\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-15:12
 MERGED from [:cloud_firestore] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\cloud_firestore\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-15:12
@@ -93,6 +95,9 @@ MERGED from [com.google.firebase:firebase-common-ktx:20.4.3] C:\Users\hp\.gradle
 MERGED from [:image_picker_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-34:12
 MERGED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-14:12
 MERGED from [:flutter_plugin_android_lifecycle] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
+MERGED from [:path_provider_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\path_provider_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
+MERGED from [:permission_handler_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\permission_handler_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
+MERGED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-19:12
 MERGED from [androidx.preference:preference:1.2.1] C:\Users\hp\.gradle\caches\transforms-3\427403d3ae4554ff8e463e4b3d342b37\transformed\preference-1.2.1\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.appcompat:appcompat:1.1.0] C:\Users\hp\.gradle\caches\transforms-3\3f73419ab058bec902a44bdbaf86e729\transformed\appcompat-1.1.0\AndroidManifest.xml:17:1-24:12
 MERGED from [com.google.firebase:firebase-auth-interop:20.0.0] C:\Users\hp\.gradle\caches\transforms-3\75902d5cb099d50814570d4b0686fbe5\transformed\jetified-firebase-auth-interop-20.0.0\AndroidManifest.xml:2:1-10:12
@@ -169,58 +174,70 @@ MERGED from [com.google.firebase:protolite-well-known-types:18.0.0] C:\Users\hp\
 		INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml
 	xmlns:android
 		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:1:11-69
+uses-permission#android.permission.WRITE_EXTERNAL_STORAGE
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:3:5-81
+	android:name
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:3:22-78
+uses-permission#android.permission.READ_EXTERNAL_STORAGE
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:4:5-80
+	android:name
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:4:22-77
+uses-permission#android.permission.MANAGE_EXTERNAL_STORAGE
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:5:5-82
+	android:name
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:5:22-79
 queries
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:39:5-44:15
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:44:5-49:15
 intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:40:9-43:18
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:45:9-48:18
 action#android.intent.action.PROCESS_TEXT
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:41:13-72
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:46:13-72
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:41:21-70
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:46:21-70
 data
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:42:13-50
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:47:13-50
 	android:mimeType
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:42:19-48
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:47:19-48
 activity#com.example.samaminifoot.sama_minifoot.MainActivity
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:6:9-27:20
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:11:9-32:20
 	android:launchMode
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:9:13-43
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:14:13-43
 	android:hardwareAccelerated
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:13:13-47
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:18:13-47
 	android:windowSoftInputMode
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:14:13-55
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:19:13-55
 	android:exported
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:8:13-36
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:13:13-36
 	android:configChanges
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:12:13-163
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:17:13-163
 	android:theme
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:11:13-47
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:16:13-47
 	android:taskAffinity
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:10:13-36
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:15:13-36
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:7:13-41
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:12:13-41
 meta-data#io.flutter.embedding.android.NormalTheme
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:19:13-22:17
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:24:13-27:17
 	android:resource
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:21:15-52
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:26:15-52
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:20:15-70
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:25:15-70
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:23:13-26:29
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:28:13-31:29
 action#android.intent.action.MAIN
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:24:17-68
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:29:17-68
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:24:25-66
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:29:25-66
 category#android.intent.category.LAUNCHER
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:25:17-76
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:30:17-76
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:25:27-74
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:30:27-74
 meta-data#flutterEmbedding
-ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:30:9-32:33
+ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:35:9-37:33
 	android:value
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:32:13-30
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:37:13-30
 	android:name
-		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:31:13-44
+		ADDED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml:36:13-44
 uses-sdk
 INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\android\app\src\main\AndroidManifest.xml
@@ -259,6 +276,12 @@ MERGED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\bu
 MERGED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:flutter_plugin_android_lifecycle] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:flutter_plugin_android_lifecycle] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\flutter_plugin_android_lifecycle\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:path_provider_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\path_provider_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:path_provider_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\path_provider_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:permission_handler_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\permission_handler_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:permission_handler_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\permission_handler_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [androidx.preference:preference:1.2.1] C:\Users\hp\.gradle\caches\transforms-3\427403d3ae4554ff8e463e4b3d342b37\transformed\preference-1.2.1\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.preference:preference:1.2.1] C:\Users\hp\.gradle\caches\transforms-3\427403d3ae4554ff8e463e4b3d342b37\transformed\preference-1.2.1\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.appcompat:appcompat:1.1.0] C:\Users\hp\.gradle\caches\transforms-3\3f73419ab058bec902a44bdbaf86e729\transformed\appcompat-1.1.0\AndroidManifest.xml:20:5-22:41
@@ -641,6 +664,16 @@ ADDED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\bui
 		ADDED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-71
 	android:name
 		ADDED from [:url_launcher_android] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\merged_manifest\debug\AndroidManifest.xml:9:13-74
+provider#net.nfet.flutter.printing.PrintFileProvider
+ADDED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:8:9-16:20
+	android:grantUriPermissions
+		ADDED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:12:13-47
+	android:authorities
+		ADDED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:10:13-68
+	android:exported
+		ADDED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-37
+	android:name
+		ADDED from [:printing] C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\merged_manifest\debug\AndroidManifest.xml:9:13-71
 provider#com.google.firebase.provider.FirebaseInitProvider
 ADDED from [com.google.firebase:firebase-common:20.4.3] C:\Users\hp\.gradle\caches\transforms-3\14cfdc1f345f3dd4d9749a487701b18f\transformed\jetified-firebase-common-20.4.3\AndroidManifest.xml:23:9-28:39
 	android:authorities

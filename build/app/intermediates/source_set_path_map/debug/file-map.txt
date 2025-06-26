@@ -52,5 +52,8 @@ com.example.samaminifoot.sama_minifoot.app-packaged_res-50 C:\Users\hp\OneDrive\
 com.example.samaminifoot.sama_minifoot.app-packaged_res-51 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\firebase_storage\intermediates\packaged_res\debug
 com.example.samaminifoot.sama_minifoot.app-packaged_res-52 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\flutter_plugin_android_lifecycle\intermediates\packaged_res\debug
 com.example.samaminifoot.sama_minifoot.app-packaged_res-53 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\image_picker_android\intermediates\packaged_res\debug
-com.example.samaminifoot.sama_minifoot.app-packaged_res-54 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\shared_preferences_android\intermediates\packaged_res\debug
-com.example.samaminifoot.sama_minifoot.app-packaged_res-55 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\packaged_res\debug
+com.example.samaminifoot.sama_minifoot.app-packaged_res-54 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\path_provider_android\intermediates\packaged_res\debug
+com.example.samaminifoot.sama_minifoot.app-packaged_res-55 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\permission_handler_android\intermediates\packaged_res\debug
+com.example.samaminifoot.sama_minifoot.app-packaged_res-56 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\printing\intermediates\packaged_res\debug
+com.example.samaminifoot.sama_minifoot.app-packaged_res-57 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\shared_preferences_android\intermediates\packaged_res\debug
+com.example.samaminifoot.sama_minifoot.app-packaged_res-58 C:\Users\hp\OneDrive\Bureau\Perso\KayFoot\build\url_launcher_android\intermediates\packaged_res\debug
