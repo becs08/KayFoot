@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../services/auth_service.dart';
 import '../../services/terrain_service.dart';
+import '../../services/statistics_service.dart';
 import '../../models/terrain.dart';
 import '../../models/user.dart';
 import '../terrain/detail_screen.dart';
@@ -18,11 +19,17 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final List<Terrain> _featuredTerrains = [];
   bool _isLoading = true;
+  
+  // Statistiques dynamiques
+  final StatisticsService _statsService = StatisticsService();
+  Map<String, dynamic> _userStats = {};
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
     super.initState();
     _loadFeaturedTerrains();
+    _loadUserStats();
   }
 
   Future<void> _loadFeaturedTerrains() async {
@@ -36,6 +43,28 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadUserStats() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user != null) {
+        final stats = await _statsService.calculateUserStats(user.id);
+        setState(() {
+          _userStats = stats;
+          _isLoadingStats = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur chargement stats: $e');
+      setState(() {
+        _isLoadingStats = false;
       });
     }
   }
@@ -467,22 +496,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.star,
-                            size: 12,
-                            color: AppConstants.accentColor,
-                          ),
-                          SizedBox(width: 2),
-                          Text(
-                            terrain.notemoyenne.toStringAsFixed(1),
-                            style: AppConstants.bodyStyle.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _statsService.calculateTerrainStats(terrain.id),
+                        builder: (context, snapshot) {
+                          final noteMoyenne = snapshot.hasData && snapshot.data!['noteMoyenne'] != null && snapshot.data!['noteMoyenne'] > 0
+                              ? snapshot.data!['noteMoyenne'] as double
+                              : 0.0;
+                          
+                          return Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 12,
+                                color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
+                              ),
+                              SizedBox(width: 2),
+                              Text(
+                                noteMoyenne > 0 ? noteMoyenne.toStringAsFixed(1) : 'N/A',
+                                style: AppConstants.bodyStyle.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
 
                       Text(
@@ -521,42 +559,90 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Vos statistiques',
-            style: AppConstants.subHeadingStyle,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Vos statistiques',
+                style: AppConstants.subHeadingStyle,
+              ),
+              if (_isLoadingStats)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
           ),
 
           SizedBox(height: AppConstants.mediumPadding),
 
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.sports_soccer,
-                  value: '12',
-                  label: 'Matchs joués',
-                ),
-              ),
-
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.schedule,
-                  value: '24h',
-                  label: 'Temps de jeu',
-                ),
-              ),
-
-              Expanded(
-                child: _buildStatItem(
-                  icon: Icons.place,
-                  value: '8',
-                  label: 'Terrains visités',
-                ),
-              ),
-            ],
-          ),
+          if (_isLoadingStats)
+            _buildLoadingStats()
+          else
+            _buildRealStats(),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingStats() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.sports_soccer,
+            value: '...',
+            label: 'Matchs joués',
+          ),
+        ),
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.schedule,
+            value: '...',
+            label: 'Temps de jeu',
+          ),
+        ),
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.place,
+            value: '...',
+            label: 'Terrains visités',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRealStats() {
+    final matchsJoues = _userStats['matchsJoues'] ?? 0;
+    final tempsJeuMinutes = _userStats['tempsJeuMinutes'] ?? 0;
+    final terrainsVisites = _userStats['terrainsVisites'] ?? 0;
+    
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.sports_soccer,
+            value: '$matchsJoues',
+            label: 'Matchs joués',
+          ),
+        ),
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.schedule,
+            value: _statsService.formatTempsJeu(tempsJeuMinutes),
+            label: 'Temps de jeu',
+          ),
+        ),
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.place,
+            value: '$terrainsVisites',
+            label: 'Terrains visités',
+          ),
+        ),
+      ],
     );
   }
 

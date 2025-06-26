@@ -22,7 +22,7 @@ class TerrainDetailScreen extends StatefulWidget {
 class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   final PageController _pageController = PageController();
   final AvisService _avisService = AvisService();
-  
+
   List<Avis> _avis = [];
   Map<String, dynamic> _statistiquesAvis = {};
   bool _isLoadingAvis = true;
@@ -38,11 +38,11 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
     setState(() {
       _isLoadingAvis = true;
     });
-    
+
     try {
       final avis = await _avisService.getAvisParTerrain(widget.terrain.id);
       final stats = await _avisService.getStatistiquesAvis(widget.terrain.id);
-      
+
       setState(() {
         _avis = avis;
         _statistiquesAvis = stats;
@@ -308,33 +308,54 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
           SizedBox(height: AppConstants.mediumPadding),
 
-          // Note et avis
-          Row(
-            children: [
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < widget.terrain.notemoyenne.floor()
-                        ? Icons.star
-                        : index < widget.terrain.notemoyenne
-                            ? Icons.star_half
-                            : Icons.star_border,
-                    color: AppConstants.accentColor,
-                    size: 20,
-                  );
-                }),
-              ),
-
-              SizedBox(width: AppConstants.smallPadding),
-
-              Text(
-                '${widget.terrain.notemoyenne.toStringAsFixed(1)} (${widget.terrain.nombreAvis} avis)',
-                style: AppConstants.bodyStyle.copyWith(
-                  fontWeight: FontWeight.w600,
+          // Note et avis dynamiques
+          if (_isLoadingAvis)
+            Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-              ),
-            ],
-          ),
+                SizedBox(width: AppConstants.smallPadding),
+                Text(
+                  'Chargement des avis...',
+                  style: AppConstants.bodyStyle.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Row(
+                  children: List.generate(5, (index) {
+                    final noteMoyenne = _statistiquesAvis['noteMoyenne'] ?? 0.0;
+                    return Icon(
+                      index < noteMoyenne.floor()
+                          ? Icons.star
+                          : index < noteMoyenne
+                              ? Icons.star_half
+                              : Icons.star_border,
+                      color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
+                      size: 20,
+                    );
+                  }),
+                ),
+
+                SizedBox(width: AppConstants.smallPadding),
+
+                Text(
+                  _statistiquesAvis['nombreAvis'] != null && _statistiquesAvis['nombreAvis'] > 0
+                      ? '${(_statistiquesAvis['noteMoyenne'] ?? 0.0).toStringAsFixed(1)} (${_statistiquesAvis['nombreAvis']} avis)'
+                      : 'Aucun avis',
+                  style: AppConstants.bodyStyle.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
 
           SizedBox(height: AppConstants.mediumPadding),
 
@@ -436,10 +457,11 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               final creneaux = entry.value;
 
               return Container(
-                margin: EdgeInsets.only(bottom: AppConstants.smallPadding),
-                padding: EdgeInsets.all(AppConstants.mediumPadding),
+                margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
+                padding: const EdgeInsets.all(AppConstants.mediumPadding),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  // ToDO changer la couleur !!
+                  //color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(AppConstants.smallRadius),
                 ),
                 child: Row(
@@ -573,7 +595,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   /// Widget résumé des notes (type PlayStore)
   Widget _buildResumeNotes(int nombreAvis, double noteMoyenne) {
     final repartition = _statistiquesAvis['repartition'] ?? {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -617,7 +639,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               ],
             ),
           ),
-          
+
           // Répartition des notes
           Expanded(
             flex: 3,
@@ -625,7 +647,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               children: [5, 4, 3, 2, 1].map((note) {
                 final count = repartition[note] ?? 0;
                 final percentage = nombreAvis > 0 ? (count / nombreAvis) : 0.0;
-                
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
@@ -784,7 +806,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 radius: 18,
                 backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
                 child: Text(
-                  avis.utilisateurNom.isNotEmpty 
+                  avis.utilisateurNom.isNotEmpty
                       ? avis.utilisateurNom[0].toUpperCase()
                       : 'U',
                   style: const TextStyle(
@@ -807,7 +829,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                         fontSize: 14,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 4),
 
                     Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../services/auth_service.dart';
+import '../../services/statistics_service.dart';
 import '../../models/user.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
@@ -12,17 +13,43 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
+  final StatisticsService _statsService = StatisticsService();
+  Map<String, dynamic> _userStats = {};
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadUserStats();
   }
 
   void _loadUserData() {
     setState(() {
       _user = AuthService().currentUser;
     });
+  }
+
+  Future<void> _loadUserStats() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user != null) {
+        final stats = await _statsService.calculateUserStats(user.id);
+        setState(() {
+          _userStats = stats;
+          _isLoadingStats = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur chargement stats: $e');
+      setState(() {
+        _isLoadingStats = false;
+      });
+    }
   }
 
   Future<void> _logout() async {
@@ -251,11 +278,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildStats() {
-    // Données simulées - à remplacer par des vraies statistiques
-    final stats = _user!.statistiques;
-    final matchsJoues = stats['matchsJoues'] ?? 0;
-    final tempsJeu = stats['tempsJeu'] ?? 0;
-    final terrainsVisites = stats['terrainsVisites'] ?? 0;
+    // Utiliser les vraies statistiques dynamiques (seulement 3 stats)
+    final matchsJoues = _userStats['matchsJoues'] ?? 0;
+    final tempsJeuMinutes = _userStats['tempsJeuMinutes'] ?? 0;
+    final terrainsVisites = _userStats['terrainsVisites'] ?? 0;
 
     return Card(
       child: Padding(
@@ -270,33 +296,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             SizedBox(height: AppConstants.mediumPadding),
             
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.sports_soccer,
-                    value: matchsJoues.toString(),
-                    label: 'Matchs joués',
+            if (_isLoadingStats)
+              Center(child: CircularProgressIndicator())
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      icon: Icons.sports_soccer,
+                      value: matchsJoues.toString(),
+                      label: 'Matchs joués',
+                    ),
                   ),
-                ),
-                
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.schedule,
-                    value: '${tempsJeu}h',
-                    label: 'Temps de jeu',
+                  
+                  Expanded(
+                    child: _buildStatItem(
+                      icon: Icons.schedule,
+                      value: _statsService.formatTempsJeu(tempsJeuMinutes),
+                      label: 'Temps de jeu',
+                    ),
                   ),
-                ),
-                
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.place,
-                    value: terrainsVisites.toString(),
-                    label: 'Terrains visités',
+                  
+                  Expanded(
+                    child: _buildStatItem(
+                      icon: Icons.place,
+                      value: terrainsVisites.toString(),
+                      label: 'Terrains visités',
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
