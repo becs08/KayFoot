@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../services/auth_service.dart';
 import '../../services/statistics_service.dart';
+import '../../services/image_upload_service.dart';
+import '../../services/fallback_image_service.dart';
 import '../../models/user.dart';
+import '../../widgets/profile_avatar.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 
@@ -14,8 +18,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
   final StatisticsService _statsService = StatisticsService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  final FallbackImageService _fallbackImageService = FallbackImageService();
   Map<String, dynamic> _userStats = {};
   bool _isLoadingStats = true;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
@@ -24,10 +31,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserStats();
   }
 
-  void _loadUserData() {
-    setState(() {
-      _user = AuthService().currentUser;
-    });
+  Future <void> _loadUserData() async {
+    try {
+      // Recharger l'utilisateur depuis Firestore pour avoir les dernières données
+      await AuthService().reloadCurrentUser();
+      setState(() {
+        _user = AuthService().currentUser;
+      });
+      print('👤 Utilisateur rechargé: ${_user?.photo}');
+    } catch (e) {
+      print('❌ Erreur rechargement utilisateur: $e');
+      setState(() {
+        _user = AuthService().currentUser;
+      });
+    }
   }
 
   Future<void> _loadUserStats() async {
@@ -89,8 +106,191 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (result != null) {
-      _loadUserData(); // Recharger les données utilisateur
+      // Recharger les données utilisateur après modification
+      await _loadUserData();
+      // Aussi recharger les stats si nécessaire
+      await _loadUserStats();
     }
+  }
+
+  void _changePhoto() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.mediumRadius),
+        ),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(AppConstants.largePadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Changer la photo de profil',
+              style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
+            ),
+
+            SizedBox(height: AppConstants.largePadding),
+
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _pickImageFromCamera();
+                    },
+                    icon: Icon(Icons.camera_alt),
+                    label: Text('Appareil photo'),
+                  ),
+                ),
+
+                SizedBox(width: AppConstants.mediumPadding),
+
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _pickImageFromGallery();
+                    },
+                    icon: Icon(Icons.photo_library),
+                    label: Text('Galerie'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Sélectionner une image depuis la galerie
+  Future<void> _pickImageFromGallery() async {
+    try {
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      // Sélectionner l'image
+      final File? imageFile = await _fallbackImageService.pickImageFromGallery();
+
+      if (imageFile == null) {
+        _showError('Aucune image sélectionnée');
+        return;
+      }
+
+      // Valider l'image
+      if (!_fallbackImageService.isValidImage(imageFile)) {
+        _showError('Format d\'image non valide ou fichier trop volumineux (max 5MB)');
+        return;
+      }
+
+      // Uploader l'image
+      await _uploadProfileImage(imageFile);
+    } catch (e) {
+      _showError('Erreur lors de la sélection de l\'image: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+    }
+  }
+
+  /// Prendre une photo avec l'appareil photo
+  Future<void> _pickImageFromCamera() async {
+    try {
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      // Prendre la photo
+      final File? imageFile = await _fallbackImageService.pickImageFromCamera();
+
+      if (imageFile == null) {
+        _showError('Aucune photo prise');
+        return;
+      }
+
+      // Valider l'image
+      if (!_fallbackImageService.isValidImage(imageFile)) {
+        _showError('Format d\'image non valide ou fichier trop volumineux (max 5MB)');
+        return;
+      }
+
+      // Uploader l'image
+      await _uploadProfileImage(imageFile);
+    } catch (e) {
+      _showError('Erreur lors de la prise de photo: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+    }
+  }
+
+  /// Upload l'image de profil
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (_user == null) {
+      _showError('Utilisateur non connecté');
+      return;
+    }
+
+    try {
+      // Afficher la taille du fichier
+      final double sizeInMB = _fallbackImageService.getImageSizeInMB(imageFile);
+      print('📸 Taille de l\'image: ${sizeInMB.toStringAsFixed(2)} MB');
+
+      String? downloadUrl;
+
+      // Essayer d'uploader vers Firebase Storage d'abord
+      downloadUrl = await _imageUploadService.uploadProfileImage(
+        imageFile,
+        _user!.id,
+        oldImageUrl: _user!.photo,
+      );
+
+      // Si Firebase Storage échoue, utiliser le service de secours
+      if (downloadUrl == null) {
+        print('⚠️ Firebase Storage non disponible, utilisation du service de secours');
+        downloadUrl = await _fallbackImageService.convertImageToBase64(imageFile);
+
+        if (downloadUrl == null) {
+          _showError('Erreur lors de la conversion de l\'image');
+          return;
+        }
+      }
+
+      // Mettre à jour le profil avec la nouvelle photo
+      final result = await AuthService().updateProfilePhoto(downloadUrl);
+
+      if (result.success) {
+        setState(() {
+          _user = result.user;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Photo de profil mise à jour avec succès'),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError(result.message);
+      }
+    } catch (e) {
+      _showError('Erreur lors de la mise à jour de la photo: ${e.toString()}');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppConstants.errorColor,
+      ),
+    );
   }
 
   @override
@@ -118,24 +318,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // Photo et informations principales
             _buildProfileHeader(),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             // Informations personnelles
             _buildPersonalInfo(),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Statistiques (pour les joueurs)
             if (_user!.role == UserRole.joueur) _buildStats(),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Paramètres et options
             _buildSettings(),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             // Bouton de déconnexion
             _buildLogoutButton(),
           ],
@@ -151,64 +351,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             // Photo de profil
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
-                  backgroundImage: _user!.photo != null
-                      ? NetworkImage(_user!.photo!)
-                      : null,
-                  child: _user!.photo == null
-                      ? Icon(
-                          Icons.person,
-                          size: 50,
-                          color: AppConstants.primaryColor,
-                        )
-                      : null,
-                ),
-                
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: () {
-                      // TODO: Changer la photo de profil
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Changer la photo à venir')),
-                      );
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppConstants.primaryColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            ProfileAvatar(
+              photoUrl: _user!.photo,
+              radius: 50,
+              fallbackText: _user!.nom,
+              onTap: _isUploadingPhoto ? null : _changePhoto,
+              showCameraIcon: true,
+              isLoading: _isUploadingPhoto,
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Nom et rôle
             Text(
               _user!.nom,
               style: AppConstants.headingStyle.copyWith(fontSize: 22),
               textAlign: TextAlign.center,
             ),
-            
-            SizedBox(height: AppConstants.smallPadding),
-            
+
+            const SizedBox(height: AppConstants.smallPadding),
+
             Container(
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.mediumPadding,
                 vertical: AppConstants.smallPadding,
               ),
@@ -224,9 +388,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            
-            SizedBox(height: AppConstants.smallPadding),
-            
+
+            const SizedBox(height: AppConstants.smallPadding),
+
             Text(
               'Membre depuis ${_formatMemberSince(_user!.dateCreation)}',
               style: AppConstants.bodyStyle.copyWith(
@@ -251,21 +415,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'Informations personnelles',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             _buildInfoRow(
               icon: Icons.email,
               label: 'Email',
               value: _user!.email,
             ),
-            
+
             _buildInfoRow(
               icon: Icons.phone,
               label: 'Téléphone',
               value: _user!.telephone,
             ),
-            
+
             _buildInfoRow(
               icon: Icons.location_city,
               label: 'Ville',
@@ -293,9 +457,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'Mes statistiques',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             if (_isLoadingStats)
               Center(child: CircularProgressIndicator())
             else
@@ -308,7 +472,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Matchs joués',
                     ),
                   ),
-                  
+
                   Expanded(
                     child: _buildStatItem(
                       icon: Icons.schedule,
@@ -316,7 +480,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Temps de jeu',
                     ),
                   ),
-                  
+
                   Expanded(
                     child: _buildStatItem(
                       icon: Icons.place,
@@ -346,9 +510,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
-          
+
           Divider(height: 1),
-          
+
           _buildSettingItem(
             icon: Icons.privacy_tip,
             title: 'Confidentialité',
@@ -359,9 +523,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
-          
+
           Divider(height: 1),
-          
+
           _buildSettingItem(
             icon: Icons.help,
             title: 'Aide et support',
@@ -372,9 +536,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
-          
+
           Divider(height: 1),
-          
+
           _buildSettingItem(
             icon: Icons.info,
             title: 'À propos',
@@ -429,9 +593,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             size: 20,
             color: Colors.grey.shade600,
           ),
-          
+
           SizedBox(width: AppConstants.mediumPadding),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +607,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontSize: 12,
                   ),
                 ),
-                
+
                 Text(
                   value,
                   style: AppConstants.bodyStyle.copyWith(
@@ -470,9 +634,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: AppConstants.primaryColor,
           size: 24,
         ),
-        
+
         SizedBox(height: AppConstants.smallPadding),
-        
+
         Text(
           value,
           style: AppConstants.subHeadingStyle.copyWith(
@@ -480,7 +644,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             fontSize: 18,
           ),
         ),
-        
+
         Text(
           label,
           style: AppConstants.bodyStyle.copyWith(
@@ -528,7 +692,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _formatMemberSince(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 365) {
       final years = (difference.inDays / 365).floor();
       return '$years an${years > 1 ? 's' : ''}';

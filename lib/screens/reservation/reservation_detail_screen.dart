@@ -170,6 +170,49 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
            widget.reservation.statut == StatutReservation.confirmee;
   }
 
+  /// Calcule la durée de la réservation en heures
+  String _calculateDuration() {
+    try {
+      final heureDebut = widget.reservation.heureDebut;
+      final heureFin = widget.reservation.heureFin;
+      
+      // Parser les heures (format "HH:mm")
+      final debutParts = heureDebut.split(':');
+      final finParts = heureFin.split(':');
+      
+      final debutHeure = int.parse(debutParts[0]);
+      final debutMinute = int.parse(debutParts[1]);
+      final finHeure = int.parse(finParts[0]);
+      final finMinute = int.parse(finParts[1]);
+      
+      // Convertir en minutes depuis minuit
+      final debutTotalMinutes = debutHeure * 60 + debutMinute;
+      final finTotalMinutes = finHeure * 60 + finMinute;
+      
+      // Calculer la différence
+      final dureeMinutes = finTotalMinutes - debutTotalMinutes;
+      
+      // Convertir en format lisible
+      if (dureeMinutes < 60) {
+        return '$dureeMinutes minutes';
+      } else {
+        final heures = dureeMinutes ~/ 60;
+        final minutes = dureeMinutes % 60;
+        
+        if (minutes == 0) {
+          return heures == 1 ? '1 heure' : '$heures heures';
+        } else {
+          return heures == 1 
+              ? '1h${minutes.toString().padLeft(2, '0')}'
+              : '${heures}h${minutes.toString().padLeft(2, '0')}';
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur calcul durée: $e');
+      return '1 heure'; // Valeur par défaut
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -445,7 +488,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             _buildDetailRow(
               icon: Icons.schedule,
               label: 'Durée',
-              value: '1 heure',
+              value: _calculateDuration(),
             ),
 
             _buildDetailRow(

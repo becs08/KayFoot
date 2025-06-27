@@ -38,12 +38,17 @@ class StatisticsService {
         final data = doc.data();
         final statut = data['statut'] as String?;
 
-        if (statut == 'terminee' || statut == 'payee') {
+        final heureDebut = data['heureDebut'] as String?;
+        final heureFin = data['heureFin'] as String?;
+        
+        // Vérifier si la réservation est dans le passé
+        final isMatchPasse = _isReservationPasse(data);
+
+        // Compter seulement les matchs terminés OU les matchs payés qui sont dans le passé
+        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
           matchsJoues++;
 
           // Calculer temps de jeu
-          final heureDebut = data['heureDebut'] as String?;
-          final heureFin = data['heureFin'] as String?;
           if (heureDebut != null && heureFin != null) {
             final duree = _calculerDureeMinutes(heureDebut, heureFin);
             tempsJeuMinutes += duree;
@@ -55,14 +60,14 @@ class StatisticsService {
             terrainsVisites.add(terrainId);
           }
 
-          // Ajouter montant dépensé
+          // Ajouter montant dépensé (seulement pour les matchs passés)
           final montant = (data['montant'] as num?)?.toDouble() ?? 0.0;
           montantDepense += montant;
 
-          // Mettre à jour dernier match
-          final dateCreation = (data['dateCreation'] as Timestamp?)?.toDate();
-          if (dateCreation != null && (dernierMatch == null || dateCreation.isAfter(dernierMatch))) {
-            dernierMatch = dateCreation;
+          // Mettre à jour dernier match (utiliser la date de réservation, pas de création)
+          final dateReservation = (data['date'] as Timestamp?)?.toDate();
+          if (dateReservation != null && (dernierMatch == null || dateReservation.isAfter(dernierMatch))) {
+            dernierMatch = dateReservation;
           }
         }
       }
@@ -137,19 +142,24 @@ class StatisticsService {
         final statut = data['statut'] as String?;
         final joueurId = data['joueurId'] as String?;
         final heureDebut = data['heureDebut'] as String?;
+        final heureFin = data['heureFin'] as String?;
 
         if (joueurId != null) {
           clientsUniques.add(joueurId);
         }
 
-        if (statut == 'terminee' || statut == 'payee') {
+        // Vérifier si la réservation est dans le passé pour les statistiques de revenus
+        final isMatchPasse = _isReservationPasse(data);
+
+        // Compter seulement les réservations terminées OU payées qui sont dans le passé
+        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
           reservationsTerminees++;
           final montant = (data['montant'] as num?)?.toDouble() ?? 0.0;
           chiffreAffaires += montant;
         }
 
-        // Analyser créneaux populaires
-        if (heureDebut != null) {
+        // Analyser créneaux populaires (toutes les réservations confirmées)
+        if (heureDebut != null && (statut == 'payee' || statut == 'confirmee' || statut == 'terminee')) {
           final creneau = _getCreneau(heureDebut);
           creneauxPopulaires[creneau] = (creneauxPopulaires[creneau] ?? 0) + 1;
         }
@@ -232,14 +242,20 @@ class StatisticsService {
         if (role == 'gerant') gerants++;
       }
 
-      // Analyser revenus totaux
+      // Analyser revenus totaux (seulement pour les matchs passés)
       double revenus = 0.0;
       int reservationsPayees = 0;
       for (final doc in reservationsSnapshot.docs) {
-        final statut = doc.data()['statut'] as String?;
-        if (statut == 'payee' || statut == 'terminee') {
+        final data = doc.data();
+        final statut = data['statut'] as String?;
+        
+        // Vérifier si la réservation est dans le passé
+        final isMatchPasse = _isReservationPasse(data);
+        
+        // Compter seulement les réservations terminées OU payées qui sont dans le passé
+        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
           reservationsPayees++;
-          final montant = (doc.data()['montant'] as num?)?.toDouble() ?? 0.0;
+          final montant = (data['montant'] as num?)?.toDouble() ?? 0.0;
           revenus += montant;
         }
       }
@@ -263,6 +279,36 @@ class StatisticsService {
   }
 
   /// 🔄 MÉTHODES UTILITAIRES
+
+  /// Vérifie si une réservation est dans le passé
+  bool _isReservationPasse(Map<String, dynamic> reservationData) {
+    try {
+      final dateReservation = (reservationData['date'] as Timestamp?)?.toDate();
+      final heureFin = reservationData['heureFin'] as String?;
+      
+      if (dateReservation == null || heureFin == null) {
+        return false;
+      }
+      
+      final heureFinParts = heureFin.split(':');
+      if (heureFinParts.length != 2) {
+        return false;
+      }
+      
+      final dateFinMatch = DateTime(
+        dateReservation.year,
+        dateReservation.month,
+        dateReservation.day,
+        int.parse(heureFinParts[0]),
+        int.parse(heureFinParts[1]),
+      );
+      
+      return dateFinMatch.isBefore(DateTime.now());
+    } catch (e) {
+      print('❌ Erreur vérification date réservation: $e');
+      return false;
+    }
+  }
 
   /// Calcule la durée en minutes entre deux heures
   int _calculerDureeMinutes(String heureDebut, String heureFin) {

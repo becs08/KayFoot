@@ -201,6 +201,34 @@ class AuthService {
     }
   }
 
+  /// Mise à jour de la photo de profil uniquement
+  Future<AuthResult> updateProfilePhoto(String photoUrl) async {
+    try {
+      if (_currentUser == null) {
+        return AuthResult(
+          success: false,
+          message: 'Aucun utilisateur connecté',
+        );
+      }
+
+      // Créer un utilisateur mis à jour avec la nouvelle photo
+      final updatedUser = _currentUser!.copyWith(photo: photoUrl);
+      
+      final result = await _firebaseAuthService.updateProfile(updatedUser);
+
+      if (result.success && result.user != null) {
+        await _saveUserData(result.user!, _authToken!);
+      }
+
+      return result;
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Erreur lors de la mise à jour de la photo: ${e.toString()}',
+      );
+    }
+  }
+
   /// Réinitialiser le mot de passe
   Future<AuthResult> resetPassword(String email) async {
     try {

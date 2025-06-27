@@ -288,7 +288,7 @@ class PdfReceiptService {
           pw.Row(
             children: [
               pw.Expanded(
-                child: _buildDetailRow('Durée:', '1 heure', font: font, fontBold: fontBold),
+                child: _buildDetailRow('Durée:', _calculateDuration(reservation), font: font, fontBold: fontBold),
               ),
               pw.Expanded(
                 child: _buildDetailRow('Réservé le:', _formatDate(reservation.dateCreation), font: font, fontBold: fontBold),
@@ -451,6 +451,48 @@ class PdfReceiptService {
         ),
       ],
     );
+  }
+
+  /// Calcule la durée de la réservation
+  String _calculateDuration(Reservation reservation) {
+    try {
+      final heureDebut = reservation.heureDebut;
+      final heureFin = reservation.heureFin;
+      
+      // Parser les heures (format "HH:mm")
+      final debutParts = heureDebut.split(':');
+      final finParts = heureFin.split(':');
+      
+      final debutHeure = int.parse(debutParts[0]);
+      final debutMinute = int.parse(debutParts[1]);
+      final finHeure = int.parse(finParts[0]);
+      final finMinute = int.parse(finParts[1]);
+      
+      // Convertir en minutes depuis minuit
+      final debutTotalMinutes = debutHeure * 60 + debutMinute;
+      final finTotalMinutes = finHeure * 60 + finMinute;
+      
+      // Calculer la différence
+      final dureeMinutes = finTotalMinutes - debutTotalMinutes;
+      
+      // Convertir en format lisible
+      if (dureeMinutes < 60) {
+        return '$dureeMinutes minutes';
+      } else {
+        final heures = dureeMinutes ~/ 60;
+        final minutes = dureeMinutes % 60;
+        
+        if (minutes == 0) {
+          return heures == 1 ? '1 heure' : '$heures heures';
+        } else {
+          return heures == 1 
+              ? '1h${minutes.toString().padLeft(2, '0')}'
+              : '${heures}h${minutes.toString().padLeft(2, '0')}';
+        }
+      }
+    } catch (e) {
+      return '1 heure'; // Valeur par défaut
+    }
   }
 
   /// Formate une date

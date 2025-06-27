@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../services/auth_service.dart';
+import '../../services/image_upload_service.dart';
+import '../../services/fallback_image_service.dart';
 import '../../models/user.dart';
+import '../../widgets/profile_avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   @override
@@ -16,7 +20,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   String _selectedVille = AppConstants.villes.first;
   bool _isLoading = false;
+  bool _isUploadingPhoto = false;
   User? _user;
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  final FallbackImageService _fallbackImageService = FallbackImageService();
 
   @override
   void initState() {
@@ -32,13 +39,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _loadUserData() {
-    _user = AuthService().currentUser;
-    if (_user != null) {
-      _nomController.text = _user!.nom;
-      _telephoneController.text = _user!.telephone;
-      _emailController.text = _user!.email;
-      _selectedVille = _user!.ville;
+  void _loadUserData() async {
+    try {
+      // Recharger l'utilisateur depuis Firestore pour avoir les dernières données
+      await AuthService().reloadCurrentUser();
+      _user = AuthService().currentUser;
+      if (_user != null) {
+        _nomController.text = _user!.nom;
+        _telephoneController.text = _user!.telephone;
+        _emailController.text = _user!.email;
+        _selectedVille = _user!.ville;
+        print('👤 Utilisateur rechargé (edit): ${_user?.photo}');
+      }
+    } catch (e) {
+      print('❌ Erreur rechargement utilisateur (edit): $e');
+      _user = AuthService().currentUser;
+      if (_user != null) {
+        _nomController.text = _user!.nom;
+        _telephoneController.text = _user!.telephone;
+        _emailController.text = _user!.email;
+        _selectedVille = _user!.ville;
+      }
     }
   }
 
@@ -116,10 +137,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      // TODO: Implémenter la prise de photo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Appareil photo à venir')),
-                      );
+                      _pickImageFromCamera();
                     },
                     icon: Icon(Icons.camera_alt),
                     label: Text('Appareil photo'),
@@ -132,10 +150,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      // TODO: Implémenter la sélection depuis la galerie
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Galerie à venir')),
-                      );
+                      _pickImageFromGallery();
                     },
                     icon: Icon(Icons.photo_library),
                     label: Text('Galerie'),
@@ -147,6 +162,124 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
+  }
+
+  /// Sélectionner une image depuis la galerie
+  Future<void> _pickImageFromGallery() async {
+    try {
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      // Sélectionner l'image
+      final File? imageFile = await _fallbackImageService.pickImageFromGallery();
+      
+      if (imageFile == null) {
+        _showError('Aucune image sélectionnée');
+        return;
+      }
+
+      // Valider l'image
+      if (!_fallbackImageService.isValidImage(imageFile)) {
+        _showError('Format d\'image non valide ou fichier trop volumineux (max 5MB)');
+        return;
+      }
+
+      // Uploader l'image
+      await _uploadProfileImage(imageFile);
+    } catch (e) {
+      _showError('Erreur lors de la sélection de l\'image: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+    }
+  }
+
+  /// Prendre une photo avec l'appareil photo
+  Future<void> _pickImageFromCamera() async {
+    try {
+      setState(() {
+        _isUploadingPhoto = true;
+      });
+
+      // Prendre la photo
+      final File? imageFile = await _fallbackImageService.pickImageFromCamera();
+      
+      if (imageFile == null) {
+        _showError('Aucune photo prise');
+        return;
+      }
+
+      // Valider l'image
+      if (!_fallbackImageService.isValidImage(imageFile)) {
+        _showError('Format d\'image non valide ou fichier trop volumineux (max 5MB)');
+        return;
+      }
+
+      // Uploader l'image
+      await _uploadProfileImage(imageFile);
+    } catch (e) {
+      _showError('Erreur lors de la prise de photo: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingPhoto = false;
+      });
+    }
+  }
+
+  /// Upload l'image de profil
+  Future<void> _uploadProfileImage(File imageFile) async {
+    if (_user == null) {
+      _showError('Utilisateur non connecté');
+      return;
+    }
+
+    try {
+      // Afficher la taille du fichier
+      final double sizeInMB = _fallbackImageService.getImageSizeInMB(imageFile);
+      print('📸 Taille de l\'image: ${sizeInMB.toStringAsFixed(2)} MB');
+
+      String? downloadUrl;
+
+      // Essayer d'uploader vers Firebase Storage d'abord
+      downloadUrl = await _imageUploadService.uploadProfileImage(
+        imageFile,
+        _user!.id,
+        oldImageUrl: _user!.photo,
+      );
+
+      // Si Firebase Storage échoue, utiliser le service de secours
+      if (downloadUrl == null) {
+        print('⚠️ Firebase Storage non disponible, utilisation du service de secours');
+        downloadUrl = await _fallbackImageService.convertImageToBase64(imageFile);
+        
+        if (downloadUrl == null) {
+          _showError('Erreur lors de la conversion de l\'image');
+          return;
+        }
+      }
+
+      // Mettre à jour le profil avec la nouvelle photo
+      final result = await AuthService().updateProfilePhoto(downloadUrl);
+
+      if (result.success) {
+        setState(() {
+          _user = result.user;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Photo de profil mise à jour avec succès'),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError(result.message);
+      }
+    } catch (e) {
+      _showError('Erreur lors de la mise à jour de la photo: ${e.toString()}');
+    }
   }
 
   @override
@@ -201,51 +334,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildProfilePhoto() {
     return Center(
-      child: Stack(
-        children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
-            backgroundImage: _user!.photo != null
-                ? NetworkImage(_user!.photo!)
-                : null,
-            child: _user!.photo == null
-                ? Icon(
-                    Icons.person,
-                    size: 60,
-                    color: AppConstants.primaryColor,
-                  )
-                : null,
-          ),
-          
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: _changePhoto,
-              child: Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppConstants.primaryColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.camera_alt,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ],
+      child: ProfileAvatar(
+        photoUrl: _user!.photo,
+        radius: 60,
+        fallbackText: _user!.nom,
+        onTap: _isUploadingPhoto ? null : _changePhoto,
+        showCameraIcon: true,
+        isLoading: _isUploadingPhoto,
       ),
     );
   }
