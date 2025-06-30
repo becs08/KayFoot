@@ -1,0 +1,2 @@
+C:/Users/hp/OneDrive/Bureau/Perso/KayFoot/android/app/.cxx/RelWithDebInfo/15731q6z/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/hp/OneDrive/Bureau/Perso/KayFoot/android/app/.cxx/RelWithDebInfo/15731q6z/arm64-v8a/CMakeFiles/rebuild_cache.dir

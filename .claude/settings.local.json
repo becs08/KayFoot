@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter clean:*)",
+      "Bash(/mnt/c/flutter/bin/flutter clean)",
+      "Bash(cp:*)",
+      "Bash(touch:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
