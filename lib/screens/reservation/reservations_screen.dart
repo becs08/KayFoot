@@ -113,6 +113,81 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     }
   }
 
+  /// Vérifie si une réservation est passée
+  bool _isPastReservation(Reservation reservation) {
+    final now = DateTime.now();
+    final reservationDateTime = DateTime(
+      reservation.date.year,
+      reservation.date.month,
+      reservation.date.day,
+      int.parse(reservation.heureDebut.split(':')[0]),
+      int.parse(reservation.heureDebut.split(':')[1]),
+    );
+
+    return reservationDateTime.isBefore(now) ||
+           reservation.statut == StatutReservation.annulee ||
+           reservation.statut == StatutReservation.terminee;
+  }
+
+  /// Supprimer une réservation de l'historique
+  Future<void> _deleteReservation(Reservation reservation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Supprimer de l\'historique'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Êtes-vous sûr de vouloir supprimer cette réservation de votre historique ?'),
+            SizedBox(height: AppConstants.smallPadding),
+            Text(
+              'Cette action est irréversible.',
+              style: TextStyle(
+                color: AppConstants.errorColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Supprimer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.errorColor,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final result = await ReservationService().deleteReservation(reservation.id);
+
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Réservation supprimée de l\'historique'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+          _loadReservations(); // Recharger les réservations
+        } else {
+          _showError(result.message);
+        }
+      } catch (e) {
+        _showError('Erreur lors de la suppression');
+      }
+    }
+  }
+
   Future<void> _cancelReservation(Reservation reservation) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -441,6 +516,48 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                         },
                         icon: Icon(Icons.qr_code, size: 16),
                         label: Text('QR Code'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              // Bouton supprimer pour les réservations passées
+              if (showPast && _isPastReservation(reservation)) ...[
+                const SizedBox(height: AppConstants.mediumPadding),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteReservation(reservation),
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: const Text('Supprimer'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppConstants.errorColor,
+                          side: const BorderSide(color: AppConstants.errorColor),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: AppConstants.smallPadding),
+
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ReservationDetailScreen(
+                                reservation: reservation,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.visibility, size: 16),
+                        label: Text('Voir détails'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade600,
+                        ),
                       ),
                     ),
                   ],

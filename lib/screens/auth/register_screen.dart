@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SizedBox(height: AppConstants.smallPadding),
 
         Text(
-          'Rejoignez la communauté SamaMinifoot',
+          'Rejoignez la communauté Kay Foot',
           style: AppConstants.bodyStyle.copyWith(
             color: Colors.grey.shade600,
           ),

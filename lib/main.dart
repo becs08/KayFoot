@@ -36,7 +36,7 @@ void main() async {
 
     if (kDebugMode) {
       try {
-        print('🚀 === INITIALISATION SAMA MINIFOOT ===');
+        print('🚀 === INITIALISATION KAY FOOT ===');
 
         // Initialiser seulement les terrains (utilisateurs modifiés manuellement)
         await FirestoreInitService.initializeTestData();
@@ -48,7 +48,7 @@ void main() async {
       }
     }
 
-    runApp(SamaMinifoot());
+    runApp(KayFoot());
   } catch (e) {
     print('❌ Erreur lors de l\'initialisation: $e');
     runApp(MaterialApp(
@@ -80,7 +80,7 @@ void main() async {
   }
 }
 
-class SamaMinifoot extends StatelessWidget {
+class KayFoot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(

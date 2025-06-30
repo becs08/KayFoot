@@ -548,9 +548,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context: context,
                 applicationName: AppConstants.appName,
                 applicationVersion: AppConstants.appVersion,
-                applicationIcon: Icon(
-                  Icons.sports_soccer,
-                  color: AppConstants.primaryColor,
+                applicationIcon: ClipOval(
+                  child: Image.asset(
+                    'assets/images/KayFoot.jpg',
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.sports_soccer,
+                        color: AppConstants.primaryColor,
+                      );
+                    },
+                  ),
                 ),
                 children: [
                   Text('Application de réservation de terrains de minifoot au Sénégal'),

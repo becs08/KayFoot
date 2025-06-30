@@ -318,6 +318,78 @@ class ReservationService {
     }
   }
 
+  /// 🗑️ Supprime une réservation de l'historique
+  Future<ReservationResult> deleteReservation(String reservationId) async {
+    try {
+      print('🗑️ Suppression réservation: $reservationId');
+
+      final docRef = _firestore.collection('reservations').doc(reservationId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        return ReservationResult(
+          success: false,
+          message: 'Réservation non trouvée',
+        );
+      }
+
+      final data = doc.data()!;
+      final reservation = Reservation(
+        id: doc.id,
+        joueurId: data['joueurId'],
+        terrainId: data['terrainId'],
+        date: (data['date'] as Timestamp).toDate(),
+        heureDebut: data['heureDebut'],
+        heureFin: data['heureFin'],
+        montant: data['montant'].toDouble(),
+        statut: _parseStatut(data['statut']),
+        modePaiement: _parseModePaiement(data['modePaiement']),
+        transactionId: data['transactionId'],
+        qrCode: data['qrCode'],
+        dateCreation: (data['dateCreation'] as Timestamp).toDate(),
+      );
+
+      // Vérifier que la réservation est bien passée
+      final now = DateTime.now();
+      final reservationDateTime = DateTime(
+        reservation.date.year,
+        reservation.date.month,
+        reservation.date.day,
+        int.parse(reservation.heureDebut.split(':')[0]),
+        int.parse(reservation.heureDebut.split(':')[1]),
+      );
+
+      final isPastReservation = reservationDateTime.isBefore(now) ||
+          reservation.statut == StatutReservation.annulee ||
+          reservation.statut == StatutReservation.terminee;
+
+      if (!isPastReservation) {
+        return ReservationResult(
+          success: false,
+          message: 'Seules les réservations passées peuvent être supprimées',
+        );
+      }
+
+      // Supprimer la réservation de Firestore
+      await docRef.delete();
+
+      print('✅ Réservation supprimée avec succès');
+
+      return ReservationResult(
+        success: true,
+        message: 'Réservation supprimée de l\'historique',
+        reservation: reservation,
+      );
+
+    } catch (e) {
+      print('❌ Erreur deleteReservation: $e');
+      return ReservationResult(
+        success: false,
+        message: 'Erreur lors de la suppression: ${e.toString()}',
+      );
+    }
+  }
+
   /// 📊 Récupère les réservations d'un terrain (pour le gérant)
   Future<List<Reservation>> getTerrainReservations(String terrainId) async {
     try {

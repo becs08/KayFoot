@@ -194,16 +194,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: Icon(
-              user?.role == UserRole.joueur
-                  ? Icons.sports_soccer
-                  : Icons.business,
-              color: Colors.white,
-              size: 30,
-            ),
+          Image.asset(
+            'assets/images/logo1.png',
+            width: 50,
+            height: 50,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                user?.role == UserRole.joueur
+                    ? Icons.sports_soccer
+                    : Icons.business,
+                color: Colors.white,
+                size: 40,
+              );
+            },
           ),
         ],
       ),

@@ -3,7 +3,7 @@ import '../config/environment_config.dart';
 
 class AppConstants {
   // App Info
-  static const String appName = 'SamaMinifoot';
+  static const String appName = 'Kay Foot';
   static const String appVersion = '1.0.0';
   
   // API Configuration

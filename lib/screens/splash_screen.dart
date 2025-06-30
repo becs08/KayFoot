@@ -52,6 +52,9 @@ class _SplashScreenState extends State<SplashScreen>
       // Attendre 3 secondes
       await Future.delayed(Duration(seconds: 3));
 
+      // Vérifier si le widget est encore monté
+      if (!mounted) return;
+
       // Vérifier l'état d'authentification
       final authService = AuthService();
       print('État d\'authentification: ${authService.isAuthenticated}');
@@ -65,17 +68,21 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } catch (e) {
       print('Erreur dans splash sequence: $e');
-      _navigateToLogin();
+      if (mounted) {
+        _navigateToLogin();
+      }
     }
   }
 
   void _navigateToLogin() {
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
   void _navigateToHome() {
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => HomeScreen()),
     );
@@ -120,10 +127,20 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.sports_soccer,
-                          size: 60,
-                          color: AppConstants.primaryColor,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/KayFoot.jpg',
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.sports_soccer,
+                                size: 60,
+                                color: AppConstants.primaryColor,
+                              );
+                            },
+                          ),
                         ),
                       ),
 

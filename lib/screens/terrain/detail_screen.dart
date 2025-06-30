@@ -193,10 +193,18 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
             : Container(
                 color: AppConstants.primaryColor.withOpacity(0.1),
                 child: Center(
-                  child: Icon(
-                    Icons.sports_soccer,
-                    size: 80,
-                    color: AppConstants.primaryColor,
+                  child: Image.asset(
+                    'assets/images/KayFoot.jpg',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.sports_soccer,
+                        size: 80,
+                        color: AppConstants.primaryColor,
+                      );
+                    },
                   ),
                 ),
               ),
