@@ -207,7 +207,7 @@ class StatisticsService {
       final stats = await calculateTerrainStats(terrainId);
 
       await _firestore.collection('terrains').doc(terrainId).update({
-        'noteMoyenne': stats['noteMoyenne'] ?? 0.0,
+        'notemoyenne': stats['noteMoyenne'] ?? 0.0,
         'nombreAvis': stats['nombreAvis'] ?? 0,
         'totalReservations': stats['totalReservations'] ?? 0,
         'chiffreAffaires': stats['chiffreAffaires'] ?? 0.0,

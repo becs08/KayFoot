@@ -6,6 +6,7 @@ class Terrain {
   final String adresse;
   final double latitude;
   final double longitude;
+  final String? googleMapsUrl; // Lien Google Maps spécifique
   final String gerantId;
   final List<String> photos;
   final List<String> equipements;
@@ -23,6 +24,7 @@ class Terrain {
     required this.adresse,
     required this.latitude,
     required this.longitude,
+    this.googleMapsUrl,
     required this.gerantId,
     this.photos = const [],
     this.equipements = const [],
@@ -42,6 +44,7 @@ class Terrain {
       adresse: json['adresse'],
       latitude: json['latitude'].toDouble(),
       longitude: json['longitude'].toDouble(),
+      googleMapsUrl: json['googleMapsUrl'],
       gerantId: json['gerantId'],
       photos: List<String>.from(json['photos'] ?? []),
       equipements: List<String>.from(json['equipements'] ?? []),
@@ -66,6 +69,7 @@ class Terrain {
       'adresse': adresse,
       'latitude': latitude,
       'longitude': longitude,
+      'googleMapsUrl': googleMapsUrl,
       'gerantId': gerantId,
       'photos': photos,
       'equipements': equipements,
@@ -85,6 +89,7 @@ class Terrain {
     String? adresse,
     double? latitude,
     double? longitude,
+    String? googleMapsUrl,
     String? gerantId,
     List<String>? photos,
     List<String>? equipements,
@@ -102,6 +107,7 @@ class Terrain {
       adresse: adresse ?? this.adresse,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      googleMapsUrl: googleMapsUrl ?? this.googleMapsUrl,
       gerantId: gerantId ?? this.gerantId,
       photos: photos ?? this.photos,
       equipements: equipements ?? this.equipements,

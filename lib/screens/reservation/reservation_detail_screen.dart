@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../constants/app_constants.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../services/terrain/terrain_service.dart';
+import '../../services/terrain/terrain_image_service.dart';
 import '../../services/reservation/reservation_service.dart';
 import '../../services/profil/statistics_service.dart';
 import '../../services/reservation/pdf_receipt_service.dart';
@@ -22,6 +24,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   bool _isLoading = true;
   bool _isDownloading = false;
   final StatisticsService _statsService = StatisticsService();
+  final TerrainImageService _imageService = TerrainImageService();
   final PdfReceiptService _receiptService = PdfReceiptService();
 
   @override
@@ -363,19 +366,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
             Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: AppConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-                  ),
-                  child: Icon(
-                    Icons.sports_soccer,
-                    color: AppConstants.primaryColor,
-                    size: 30,
-                  ),
-                ),
+                _buildTerrainThumbnail(),
 
                 SizedBox(width: AppConstants.mediumPadding),
 
@@ -775,5 +766,82 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       case ModePaiement.especes:
         return 'Espèces';
     }
+  }
+
+  /// 🖼️ Widget pour afficher la miniature du terrain dans les détails de réservation
+  Widget _buildTerrainThumbnail() {
+    if (_terrain == null) {
+      return Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: AppConstants.primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        ),
+        child: Icon(
+          Icons.sports_soccer,
+          color: AppConstants.primaryColor,
+          size: 30,
+        ),
+      );
+    }
+
+    final thumbnailUrl = _imageService.getThumbnailUrl(_terrain!.photos);
+
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        child: thumbnailUrl != null
+            ? CachedNetworkImage(
+                imageUrl: thumbnailUrl,
+                fit: BoxFit.cover,
+                width: 60,
+                height: 60,
+                placeholder: (context, url) => Container(
+                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  child: Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppConstants.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.sports_soccer,
+                    color: AppConstants.primaryColor,
+                    size: 30,
+                  ),
+                ),
+              )
+            : Container(
+                color: AppConstants.primaryColor.withOpacity(0.1),
+                child: Icon(
+                  Icons.sports_soccer,
+                  color: AppConstants.primaryColor,
+                  size: 30,
+                ),
+              ),
+      ),
+    );
   }
 }

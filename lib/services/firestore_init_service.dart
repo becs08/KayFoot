@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/avis.dart';
+import 'avis/avis_service.dart';
 
 class FirestoreInitService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,9 +16,16 @@ class FirestoreInitService {
       if (terrainsSnapshot.docs.isNotEmpty) {
         print('✅ Terrains déjà initialisés');
 
-        // Toujours recréer les avis pour corriger le problème
-        await _createTestAvis();
+        // Vérifier si des avis existent déjà
+        final existingAvisSnapshot = await _firestore.collection('avis').limit(1).get();
+        if (existingAvisSnapshot.docs.isEmpty) {
+          print('📝 Aucun avis trouvé, création d\'avis de test...');
+          await _createTestAvis();
+        } else {
+          print('✅ Avis existants préservés');
+        }
 
+        
         await _showIndexInstructions(); // Toujours afficher les instructions index
         return;
       }
@@ -30,6 +38,7 @@ class FirestoreInitService {
 
       // Créer des avis de test
       await _createTestAvis();
+
 
       // Afficher les instructions pour les index
       await _showIndexInstructions();
@@ -153,6 +162,7 @@ class FirestoreInitService {
         'ville': 'Dakar',
         'adresse': 'Plateau, Avenue Léopold Sédar Senghor',
         'geolocation': const GeoPoint(14.6937, -17.4441),
+        'googleMapsUrl': 'https://maps.app.goo.gl/G25Ehcy5rZ5NtCQL8', // Stade Léopold Sédar Senghor
         'gerantId': gerantId,
         'photos': [
           'https://images.unsplash.com/photo-1556056504-5c7696c4c28d?w=800',
@@ -180,6 +190,7 @@ class FirestoreInitService {
         'ville': 'Thiès',
         'adresse': 'Centre-ville, Route de Mbour',
         'geolocation': const GeoPoint(14.7886, -16.9361),
+        'googleMapsUrl': 'https://maps.app.goo.gl/8X4pQrKzNvU3mYeZ8', // Centre-ville Thiès
         'gerantId': gerantId,
         'photos': [
           'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800',
@@ -206,6 +217,7 @@ class FirestoreInitService {
         'ville': 'Saint-Louis',
         'adresse': 'Sor, Quartier Nord',
         'geolocation': const GeoPoint(16.0402, -16.4897),
+        'googleMapsUrl': 'https://maps.app.goo.gl/DvTuKRp8VKqzm4Fy9', // Saint-Louis centre
         'gerantId': gerantId,
         'photos': [
           'https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?w=800',
@@ -233,6 +245,7 @@ class FirestoreInitService {
         'ville': 'Kaolack',
         'adresse': 'Quartier Médina, près du marché central',
         'geolocation': const GeoPoint(14.1592, -16.0729),
+        'googleMapsUrl': 'https://maps.app.goo.gl/7H9mRqzY3QjKtVgA8', // Kaolack centre
         'gerantId': gerantId,
         'photos': [
           'https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=800',
@@ -292,19 +305,7 @@ class FirestoreInitService {
   /// Crée des avis de test pour les terrains
   static Future<void> _createTestAvis() async {
     try {
-      print('💬 Création des avis de test...');
-
-      // Supprimer les anciens avis et recréer avec la bonne structure
-      print('🗑️ Suppression des anciens avis...');
-      final oldAvisSnapshot = await _firestore.collection('avis').get();
-      final batch = _firestore.batch();
-      for (final doc in oldAvisSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      if (oldAvisSnapshot.docs.isNotEmpty) {
-        await batch.commit();
-        print('✅ Anciens avis supprimés');
-      }
+      print('📝 Création d\'avis de test...');
 
       // Récupérer les terrains pour les lier aux avis
       final terrainsSnapshot = await _firestore.collection('terrains').get();
@@ -411,6 +412,39 @@ class FirestoreInitService {
     ];
 
     return comments[index % comments.length];
+  }
+
+  /// 🔄 Migrer les anciens champs statistiques
+  static Future<void> _migrerChampsStatistiques() async {
+    try {
+      print('🔄 Migration des champs notemoyenne -> noteMoyenne...');
+      
+      final terrainsSnapshot = await _firestore.collection('terrains').get();
+      int terrainsMigres = 0;
+      
+      for (final terrainDoc in terrainsSnapshot.docs) {
+        final data = terrainDoc.data();
+        
+        // Vérifier si l'ancien champ existe
+        if (data.containsKey('notemoyenne')) {
+          final ancienneNote = data['notemoyenne'];
+          
+          print('📝 Migration terrain ${terrainDoc.id}: notemoyenne=$ancienneNote');
+          
+          // Mettre à jour avec le nouveau nom de champ et supprimer l'ancien
+          await terrainDoc.reference.update({
+            'noteMoyenne': ancienneNote,
+            'notemoyenne': FieldValue.delete(), // Supprimer l'ancien champ
+          });
+          
+          terrainsMigres++;
+        }
+      }
+      
+      print('✅ Migration terminée: $terrainsMigres/${terrainsSnapshot.docs.length} terrains migrés');
+    } catch (e) {
+      print('❌ Erreur migration champs: $e');
+    }
   }
 }
 

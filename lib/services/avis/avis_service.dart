@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/avis.dart';
 import '../../models/user.dart';
+import '../profil/statistics_service.dart';
 
 class AvisService {
   static final AvisService _instance = AvisService._internal();
@@ -8,6 +9,7 @@ class AvisService {
   AvisService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StatisticsService _statsService = StatisticsService();
 
   /// 📝 Ajouter un avis pour un terrain
   Future<bool> ajouterAvis({
@@ -50,8 +52,10 @@ class AvisService {
         print('✅ Nouvel avis créé');
       }
 
-      // Mettre à jour la note moyenne du terrain
-      await _mettreAJourNoteMoyenne(terrainId);
+      // Mettre à jour les statistiques du terrain (méthode améliorée)
+      print('🔧 Mise à jour statistiques après ajout avis...');
+      await _synchroniserStatistiquesTerrain(terrainId);
+      
 
       return true;
     } catch (e) {
@@ -146,7 +150,7 @@ class AvisService {
       final stats = await getStatistiquesAvis(terrainId);
 
       await _firestore.collection('terrains').doc(terrainId).update({
-        'noteMoyenne': stats['noteMoyenne'],
+        'notemoyenne': stats['noteMoyenne'],
         'nombreAvis': stats['nombreAvis'],
       });
 
@@ -156,15 +160,63 @@ class AvisService {
     }
   }
 
-  /// 🗑️ Supprimer un avis (si besoin)
-  Future<bool> supprimerAvis(String avisId) async {
+  /// 🗑️ Supprimer un avis
+  Future<bool> supprimerAvis(String avisId, String terrainId) async {
     try {
       await _firestore.collection('avis').doc(avisId).delete();
       print('✅ Avis supprimé');
+      
+      // Mettre à jour les statistiques après suppression
+      await _synchroniserStatistiquesTerrain(terrainId);
+      
       return true;
     } catch (e) {
       print('❌ Erreur suppression avis: $e');
       return false;
     }
   }
+
+  /// 🔄 Synchroniser les statistiques d'un terrain (méthode améliorée)
+  Future<void> _synchroniserStatistiquesTerrain(String terrainId) async {
+    try {
+      print('🔄 Synchronisation statistiques terrain: $terrainId');
+      
+      // Utiliser StatisticsService pour des calculs plus précis
+      await _statsService.updateTerrainStats(terrainId);
+      
+      print('✅ Statistiques terrain synchronisées');
+    } catch (e) {
+      print('❌ Erreur synchronisation statistiques: $e');
+      
+      // Fallback vers l'ancienne méthode
+      await _mettreAJourNoteMoyenne(terrainId);
+    }
+  }
+
+  /// 🛠️ Corriger les statistiques de tous les terrains
+  Future<void> corrigerToutesLesStatistiques() async {
+    try {
+      print('🛠️ Correction de toutes les statistiques des terrains...');
+      
+      // Récupérer tous les terrains
+      final terrainsSnapshot = await _firestore.collection('terrains').get();
+      
+      int terrainsCorreges = 0;
+      
+      for (final terrainDoc in terrainsSnapshot.docs) {
+        try {
+          await _synchroniserStatistiquesTerrain(terrainDoc.id);
+          terrainsCorreges++;
+          print('✅ Terrain ${terrainDoc.id} corrigé ($terrainsCorreges/${terrainsSnapshot.docs.length})');
+        } catch (e) {
+          print('❌ Erreur correction terrain ${terrainDoc.id}: $e');
+        }
+      }
+      
+      print('🎉 Correction terminée: $terrainsCorreges/${terrainsSnapshot.docs.length} terrains corrigés');
+    } catch (e) {
+      print('❌ Erreur correction globale: $e');
+    }
+  }
+
 }

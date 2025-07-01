@@ -36,11 +36,15 @@ dependencies:
   # Date & Time
   intl: ^0.17.0
 
-  # Image Picker
+  # Image Picker & Caching
   image_picker: ^1.0.4
+  cached_network_image: ^3.3.0
 
   # Utilities
   url_launcher: ^6.2.1
+  
+  # Geolocation
+  geolocator: ^10.1.0
 
   # PDF Generation
   pdf: ^3.10.4

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../constants/app_constants.dart';
 import '../../services/terrain/terrain_service.dart';
+import '../../services/terrain/terrain_image_service.dart';
 import '../../services/profil/statistics_service.dart';
+import '../../services/location/location_service.dart';
 import '../../models/terrain.dart';
 import 'detail_screen.dart';
 
@@ -15,7 +18,9 @@ class TerrainListScreen extends StatefulWidget {
 class _TerrainListScreenState extends State<TerrainListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TerrainService _terrainService = TerrainService();
+  final TerrainImageService _imageService = TerrainImageService();
   final StatisticsService _statsService = StatisticsService();
+  final LocationService _locationService = LocationService();
 
   List<Terrain> _allTerrains = [];
   List<Terrain> _filteredTerrains = [];
@@ -28,6 +33,16 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
     super.initState();
     _loadTerrains();
     _searchController.addListener(_onSearchChanged);
+    _tryGetUserLocation();
+  }
+
+  Future<void> _tryGetUserLocation() async {
+    try {
+      await _locationService.getCurrentPosition();
+    } catch (e) {
+      // Ignorer l'erreur silencieusement
+      // L'utilisateur peut choisir de ne pas partager sa position
+    }
   }
 
   @override
@@ -85,12 +100,38 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
             return a.prixHeure.compareTo(b.prixHeure);
           case 'note':
             return b.notemoyenne.compareTo(a.notemoyenne);
+          case 'distance':
+            return _sortByDistance(a, b);
           case 'nom':
           default:
             return a.nom.compareTo(b.nom);
         }
       });
     });
+  }
+
+  int _sortByDistance(Terrain a, Terrain b) {
+    final currentPosition = _locationService.currentPosition;
+    if (currentPosition == null) {
+      // Si pas de position, trier par nom
+      return a.nom.compareTo(b.nom);
+    }
+
+    final distanceA = _locationService.calculateDistance(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      a.latitude,
+      a.longitude,
+    );
+    
+    final distanceB = _locationService.calculateDistance(
+      currentPosition.latitude,
+      currentPosition.longitude,
+      b.latitude,
+      b.longitude,
+    );
+
+    return distanceA.compareTo(distanceB);
   }
 
   void _showError(String message) {
@@ -204,11 +245,34 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '${_filteredTerrains.length} terrain(s) trouvé(s)',
-            style: AppConstants.bodyStyle.copyWith(
-              color: Colors.grey.shade700,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${_filteredTerrains.length} terrain(s) trouvé(s)',
+                style: AppConstants.bodyStyle.copyWith(
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              if (_sortBy == 'distance' && _locationService.currentPosition != null)
+                Text(
+                  'Triés par distance',
+                  style: AppConstants.bodyStyle.copyWith(
+                    fontSize: 10,
+                    color: AppConstants.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              if (_sortBy == 'distance' && _locationService.currentPosition == null)
+                Text(
+                  'Position non disponible',
+                  style: AppConstants.bodyStyle.copyWith(
+                    fontSize: 10,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
           ),
 
           DropdownButton<String>(
@@ -223,6 +287,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
               DropdownMenuItem(value: 'nom', child: Text('Nom A-Z')),
               DropdownMenuItem(value: 'prix', child: Text('Prix croissant')),
               DropdownMenuItem(value: 'note', child: Text('Mieux notés')),
+              DropdownMenuItem(value: 'distance', child: Text('Plus proches')),
             ],
             onChanged: (value) {
               setState(() {
@@ -304,19 +369,7 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Image du terrain
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppConstants.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppConstants.smallRadius),
-                    ),
-                    child: Icon(
-                      Icons.sports_soccer,
-                      color: AppConstants.primaryColor,
-                      size: 32,
-                    ),
-                  ),
+                  _buildTerrainImage(terrain),
 
                   SizedBox(width: AppConstants.mediumPadding),
 
@@ -401,6 +454,44 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
                             ),
 
                             Spacer(),
+
+                            // Distance (si tri par distance)
+                            if (_sortBy == 'distance' && _locationService.currentPosition != null) ...[
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                margin: EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: AppConstants.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.near_me,
+                                      size: 10,
+                                      color: AppConstants.primaryColor,
+                                    ),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      _locationService.formatDistance(
+                                        _locationService.calculateDistance(
+                                          _locationService.currentPosition!.latitude,
+                                          _locationService.currentPosition!.longitude,
+                                          terrain.latitude,
+                                          terrain.longitude,
+                                        ),
+                                      ),
+                                      style: AppConstants.bodyStyle.copyWith(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppConstants.primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
 
                             // Prix
                             Text(
@@ -554,6 +645,63 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// 🖼️ Widget pour afficher l'image du terrain
+  Widget _buildTerrainImage(Terrain terrain) {
+    final thumbnailUrl = _imageService.getThumbnailUrl(terrain.photos);
+
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+        child: thumbnailUrl != null
+            ? CachedNetworkImage(
+                imageUrl: thumbnailUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppConstants.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => _buildDefaultTerrainImage(),
+              )
+            : _buildDefaultTerrainImage(),
+      ),
+    );
+  }
+
+  /// 🏟️ Widget par défaut quand il n'y a pas d'image
+  Widget _buildDefaultTerrainImage() {
+    return Container(
+      color: AppConstants.primaryColor.withOpacity(0.1),
+      child: Icon(
+        Icons.sports_soccer,
+        color: AppConstants.primaryColor,
+        size: 32,
+      ),
     );
   }
 }

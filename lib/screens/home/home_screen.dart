@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../constants/app_constants.dart';
 import '../../services/Authentification/auth_service.dart';
 import '../../services/terrain/terrain_service.dart';
+import '../../services/terrain/terrain_image_service.dart';
 import '../../services/profil/statistics_service.dart';
 import '../../models/terrain.dart';
 import '../../models/user.dart';
 import '../terrain/detail_screen.dart';
 import '../terrain/list_screen.dart';
+import '../terrain/terrains_proches_screen.dart';
 import '../profil/profile_screen.dart';
 import '../reservation/reservations_screen.dart';
 
@@ -22,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Statistiques dynamiques
   final StatisticsService _statsService = StatisticsService();
+  final TerrainImageService _imageService = TerrainImageService();
   Map<String, dynamic> _userStats = {};
   bool _isLoadingStats = true;
 
@@ -194,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+
           Image.asset(
             'assets/images/logo1.png',
             width: 50,
@@ -269,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'Trouvez près de vous',
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => TerrainListScreen()),
+                    MaterialPageRoute(builder: (context) => TerrainsProchesScreen()),
                   );
                 },
               ),
@@ -445,22 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image du terrain
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppConstants.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppConstants.mediumRadius),
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.sports_soccer,
-                  size: 40,
-                  color: AppConstants.primaryColor,
-                ),
-              ),
-            ),
+            _buildTerrainImage(terrain),
 
             Padding(
               padding: EdgeInsets.all(AppConstants.smallPadding),
@@ -689,4 +679,63 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
+  /// 🖼️ Widget pour afficher l'image du terrain sur la page d'accueil
+  Widget _buildTerrainImage(Terrain terrain) {
+    final thumbnailUrl = _imageService.getThumbnailUrl(terrain.photos);
+
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.mediumRadius),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.mediumRadius),
+        ),
+        child: thumbnailUrl != null
+            ? CachedNetworkImage(
+                imageUrl: thumbnailUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 100,
+                placeholder: (context, url) => Container(
+                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppConstants.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => _buildDefaultTerrainImage(),
+              )
+            : _buildDefaultTerrainImage(),
+      ),
+    );
+  }
+
+  /// 🏟️ Widget par défaut quand il n'y a pas d'image sur la page d'accueil
+  Widget _buildDefaultTerrainImage() {
+    return Container(
+      height: 100,
+      color: AppConstants.primaryColor.withOpacity(0.1),
+      child: Center(
+        child: Icon(
+          Icons.sports_soccer,
+          size: 40,
+          color: AppConstants.primaryColor,
+        ),
+      ),
+    );
+  }
+
 }

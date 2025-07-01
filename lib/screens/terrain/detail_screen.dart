@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../constants/app_constants.dart';
 import '../../models/terrain.dart';
 import '../../models/avis.dart';
 import '../../models/reservation.dart';
 import '../../services/terrain/terrain_service.dart';
+import '../../services/terrain/terrain_image_service.dart';
 import '../../services/reservation/reservation_service.dart';
 import '../../services/Authentification/auth_service.dart';
 import '../../services/avis/avis_service.dart';
@@ -23,6 +25,7 @@ class TerrainDetailScreen extends StatefulWidget {
 class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   final PageController _pageController = PageController();
   final AvisService _avisService = AvisService();
+  final TerrainImageService _imageService = TerrainImageService();
 
   List<Avis> _avis = [];
   Map<String, dynamic> _statistiquesAvis = {};
@@ -167,26 +170,81 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 },
                 itemCount: widget.terrain.photos.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(widget.terrain.photos[index]),
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: widget.terrain.photos[index],
                         fit: BoxFit.cover,
-                        onError: (error, stackTrace) {},
-                      ),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.3),
-                          ],
+                        placeholder: (context, url) => Container(
+                          color: AppConstants.primaryColor.withOpacity(0.1),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppConstants.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppConstants.primaryColor.withOpacity(0.1),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey.shade600,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Image non disponible',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.3),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Compteur d'images
+                      if (widget.terrain.photos.length > 1)
+                        Positioned(
+                          top: 40,
+                          right: 16,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${index + 1} / ${widget.terrain.photos.length}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               )
@@ -1063,4 +1121,87 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
       return 'Il y a quelques minutes';
     }
   }
+
+  /*String _formatDateAvis(DateTime date) {
+    return _formatDate(date);
+  }
+
+  /// 🗺️ Ouvrir le terrain dans Google Maps
+  Future<void> _ouvrirDansGoogleMaps() async {
+    try {
+      String mapsUrl;
+
+      // Utiliser le lien Google Maps spécifique si disponible
+      if (widget.terrain.googleMapsUrl != null && widget.terrain.googleMapsUrl!.isNotEmpty) {
+        mapsUrl = widget.terrain.googleMapsUrl!;
+      } else {
+        // Fallback vers les coordonnées
+        final latitude = widget.terrain.latitude;
+        final longitude = widget.terrain.longitude;
+        mapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+      }
+
+      final uri = Uri.parse(mapsUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Impossible d\'ouvrir Google Maps')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Erreur ouverture Google Maps: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'ouverture de Maps')),
+        );
+      }
+    }
+  }
+
+  /// 🚗 Obtenir l'itinéraire vers le terrain
+  Future<void> _obtenirItineraire() async {
+    try {
+      String directionsUrl;
+
+      // Utiliser le lien Google Maps spécifique si disponible
+      if (widget.terrain.googleMapsUrl != null && widget.terrain.googleMapsUrl!.isNotEmpty) {
+        // Modifier le lien pour ouvrir directement les directions
+        final originalUrl = widget.terrain.googleMapsUrl!;
+        if (originalUrl.contains('maps.app.goo.gl') || originalUrl.contains('maps.google.com')) {
+          // Pour les liens courts Google Maps, ajouter le paramètre de direction
+          directionsUrl = '$originalUrl&dirflg=d';
+        } else {
+          directionsUrl = originalUrl;
+        }
+      } else {
+        // Fallback vers les coordonnées avec directions
+        final latitude = widget.terrain.latitude;
+        final longitude = widget.terrain.longitude;
+        directionsUrl = 'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
+      }
+
+      final uri = Uri.parse(directionsUrl);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Impossible d\'ouvrir l\'itinéraire')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Erreur ouverture itinéraire: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'ouverture de l\'itinéraire')),
+        );
+      }
+    }
+  }*/
 }

@@ -2,7 +2,9 @@
 // Fichier: lib/services/terrain_service.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../models/terrain.dart';
+import '../location/location_service.dart';
 
 class TerrainService {
   // Singleton pattern
@@ -115,6 +117,145 @@ class TerrainService {
       return filteredTerrains;
     } catch (e) {
       print('❌ Erreur searchTerrains: $e');
+      rethrow;
+    }
+  }
+
+  /// 📍 Récupère les terrains triés par distance (terrains proches)
+  Future<List<TerrainWithDistance>> getTerrainsProches({int? limit}) async {
+    try {
+      print('📍 Récupération des terrains proches...');
+
+      // Obtenir la position actuelle
+      final locationService = LocationService();
+      final position = await locationService.getCurrentPosition();
+      
+      if (position == null) {
+        print('❌ Position non disponible');
+        // Retourner tous les terrains sans distance
+        final allTerrains = await getAllTerrains();
+        return allTerrains.map((terrain) => TerrainWithDistance(
+          terrain: terrain,
+          distance: null,
+          distanceFormatted: 'Position non disponible',
+        )).toList();
+      }
+
+      // Récupérer tous les terrains
+      final allTerrains = await getAllTerrains();
+      
+      // Calculer les distances et trier
+      final terrainsWithDistance = allTerrains.map((terrain) {
+        final distance = locationService.calculateDistance(
+          position.latitude,
+          position.longitude,
+          terrain.latitude,
+          terrain.longitude,
+        );
+        
+        return TerrainWithDistance(
+          terrain: terrain,
+          distance: distance,
+          distanceFormatted: locationService.formatDistance(distance),
+        );
+      }).toList();
+
+      // Trier par distance
+      terrainsWithDistance.sort((a, b) {
+        if (a.distance == null && b.distance == null) return 0;
+        if (a.distance == null) return 1;
+        if (b.distance == null) return -1;
+        return a.distance!.compareTo(b.distance!);
+      });
+
+      // Appliquer la limite si spécifiée
+      final result = limit != null 
+          ? terrainsWithDistance.take(limit).toList()
+          : terrainsWithDistance;
+
+      print('📍 ${result.length} terrains triés par distance');
+      return result;
+    } catch (e) {
+      print('❌ Erreur getTerrainsProches: $e');
+      rethrow;
+    }
+  }
+
+  /// 🏙️ Récupère les terrains proches d'une ville spécifique
+  Future<List<TerrainWithDistance>> getTerrainsProchesVille(String ville, {int? limit}) async {
+    try {
+      print('🏙️ Terrains proches de $ville...');
+
+      // Obtenir la position actuelle
+      final locationService = LocationService();
+      final position = await locationService.getCurrentPosition();
+
+      // Récupérer les terrains de la ville
+      final terrainsVille = await getTerrainsByVille(ville);
+      
+      if (position == null) {
+        // Retourner les terrains de la ville sans distance
+        return terrainsVille.map((terrain) => TerrainWithDistance(
+          terrain: terrain,
+          distance: null,
+          distanceFormatted: 'Position non disponible',
+        )).toList();
+      }
+
+      // Calculer les distances et trier
+      final terrainsWithDistance = terrainsVille.map((terrain) {
+        final distance = locationService.calculateDistance(
+          position.latitude,
+          position.longitude,
+          terrain.latitude,
+          terrain.longitude,
+        );
+        
+        return TerrainWithDistance(
+          terrain: terrain,
+          distance: distance,
+          distanceFormatted: locationService.formatDistance(distance),
+        );
+      }).toList();
+
+      // Trier par distance
+      terrainsWithDistance.sort((a, b) {
+        if (a.distance == null && b.distance == null) return 0;
+        if (a.distance == null) return 1;
+        if (b.distance == null) return -1;
+        return a.distance!.compareTo(b.distance!);
+      });
+
+      // Appliquer la limite si spécifiée
+      final result = limit != null 
+          ? terrainsWithDistance.take(limit).toList()
+          : terrainsWithDistance;
+
+      print('🏙️ ${result.length} terrains proches dans $ville');
+      return result;
+    } catch (e) {
+      print('❌ Erreur getTerrainsProchesVille: $e');
+      rethrow;
+    }
+  }
+
+  /// 🎯 Obtenir les terrains dans un rayon donné (en km)
+  Future<List<TerrainWithDistance>> getTerrainsInRadius(double radiusKm) async {
+    try {
+      print('🎯 Terrains dans un rayon de ${radiusKm}km...');
+
+      final terrainsProches = await getTerrainsProches();
+      
+      // Filtrer par rayon
+      final terrainsInRadius = terrainsProches.where((terrainWithDistance) {
+        return terrainWithDistance.distance != null && 
+               terrainWithDistance.distance! <= radiusKm;
+      }).toList();
+
+      print('🎯 ${terrainsInRadius.length} terrains dans le rayon de ${radiusKm}km');
+      return terrainsInRadius;
+    } catch (e) {
+      print('❌ Erreur getTerrainsInRadius: $e');
       rethrow;
     }
   }
@@ -236,27 +377,36 @@ class TerrainService {
 
   /// 🔄 Méthode helper pour créer un Terrain à partir des données
   Terrain _createTerrainFromData(String id, Map<String, dynamic> data) {
-    return Terrain(
-      id: id,
-      nom: data['nom'] ?? '',
-      description: data['description'] ?? '',
-      ville: data['ville'] ?? '',
-      adresse: data['adresse'] ?? '',
-      latitude: (data['geolocation'] as GeoPoint?)?.latitude ?? 0.0,
-      longitude: (data['geolocation'] as GeoPoint?)?.longitude ?? 0.0,
-      gerantId: data['gerantId'] ?? '',
-      photos: List<String>.from(data['photos'] ?? []),
-      equipements: List<String>.from(data['equipements'] ?? []),
-      prixHeure: (data['prixHeure'] as num?)?.toDouble() ?? 0.0,
-      disponibilites: Map<String, List<String>>.from(
-        data['disponibilites']?.map(
-              (key, value) => MapEntry(key, List<String>.from(value ?? [])),
-        ) ?? {},
-      ),
-      notemoyenne: (data['notemoyenne'] as num?)?.toDouble() ?? 0.0,
-      nombreAvis: data['nombreAvis'] ?? 0,
-      dateCreation: (data['dateCreation'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
+    try {
+      print('📋 Création terrain depuis données: $id');
+      
+      return Terrain(
+        id: id,
+        nom: data['nom'] ?? '',
+        description: data['description'] ?? '',
+        ville: data['ville'] ?? '',
+        adresse: data['adresse'] ?? '',
+        latitude: (data['geolocation'] as GeoPoint?)?.latitude ?? 0.0,
+        longitude: (data['geolocation'] as GeoPoint?)?.longitude ?? 0.0,
+        googleMapsUrl: data['googleMapsUrl'],
+        gerantId: data['gerantId'] ?? '',
+        photos: List<String>.from(data['photos'] ?? []),
+        equipements: List<String>.from(data['equipements'] ?? []),
+        prixHeure: (data['prixHeure'] as num?)?.toDouble() ?? 0.0,
+        disponibilites: Map<String, List<String>>.from(
+          data['disponibilites']?.map(
+                (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+          ) ?? {},
+        ),
+        notemoyenne: (data['notemoyenne'] as num?)?.toDouble() ?? 0.0,
+        nombreAvis: data['nombreAvis'] ?? 0,
+        dateCreation: (data['dateCreation'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      );
+    } catch (e) {
+      print('❌ Erreur création terrain $id: $e');
+      print('📊 Données reçues: $data');
+      rethrow;
+    }
   }
 
   // Méthodes d'avis supprimées - voir AvisService
@@ -271,6 +421,7 @@ extension TerrainFirestore on Terrain {
       'ville': ville,
       'adresse': adresse,
       'geolocation': GeoPoint(latitude, longitude),
+      'googleMapsUrl': googleMapsUrl,
       'gerantId': gerantId,
       'photos': photos,
       'equipements': equipements,
@@ -293,5 +444,18 @@ class TerrainResult {
     required this.success,
     required this.message,
     this.terrain,
+  });
+}
+
+// 📍 Classe pour représenter un terrain avec sa distance
+class TerrainWithDistance {
+  final Terrain terrain;
+  final double? distance; // Distance en kilomètres
+  final String distanceFormatted; // Distance formatée pour l'affichage
+
+  TerrainWithDistance({
+    required this.terrain,
+    this.distance,
+    required this.distanceFormatted,
   });
 }
