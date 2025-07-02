@@ -70,8 +70,25 @@ class SimpleReceiptService {
     buffer.writeln('───────────────────────────────────────');
     buffer.writeln('INFORMATIONS DE PAIEMENT');
     buffer.writeln('───────────────────────────────────────');
+    
+    // Badge de statut de paiement
+    if (reservation.isPaiementAvance) {
+      buffer.writeln('🟠 PAIEMENT EN AVANCE');
+      buffer.writeln();
+      buffer.writeln('Total réservation: ${reservation.montant.toInt()} FCFA');
+      buffer.writeln('✅ Avance payée: ${reservation.montantAvance.toInt()} FCFA');
+      buffer.writeln('🕐 Reste à payer: ${reservation.montantRestant.toInt()} FCFA');
+      buffer.writeln();
+      buffer.writeln('⚠️  IMPORTANT: Le montant restant de');
+      buffer.writeln('    ${reservation.montantRestant.toInt()} FCFA sera à régler le jour du match.');
+    } else {
+      buffer.writeln('🟢 PAIEMENT COMPLET');
+      buffer.writeln();
+      buffer.writeln('MONTANT TOTAL: ${reservation.montant.toInt()} FCFA');
+    }
+    
+    buffer.writeln();
     buffer.writeln('Mode de paiement: ${_getPaymentMethodName(reservation.modePaiement)}');
-    buffer.writeln('MONTANT TOTAL: ${reservation.montant.toInt()} FCFA');
 
     if (reservation.transactionId != null) {
       buffer.writeln('ID Transaction: ${reservation.transactionId}');
@@ -80,6 +97,7 @@ class SimpleReceiptService {
 
     // QR Code
     if (reservation.statut == StatutReservation.payee ||
+        reservation.statut == StatutReservation.avance ||
         reservation.statut == StatutReservation.confirmee) {
       buffer.writeln('───────────────────────────────────────');
       buffer.writeln("QR CODE D\\'ACCÈS");
@@ -215,6 +233,8 @@ class SimpleReceiptService {
         return 'EN ATTENTE';
       case StatutReservation.confirmee:
         return 'CONFIRMÉE';
+      case StatutReservation.avance:
+        return 'AVANCE PAYÉE';
       case StatutReservation.payee:
         return 'PAYÉE';
       case StatutReservation.annulee:
@@ -273,10 +293,6 @@ class SimpleReceiptService {
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 }

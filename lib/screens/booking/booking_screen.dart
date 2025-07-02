@@ -20,6 +20,7 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime _selectedDate = DateTime.now().add(Duration(days: 1));
   List<String> _selectedCreneaux = []; // 🆕 Liste des créneaux sélectionnés
   ModePaiement _selectedPaymentMethod = ModePaiement.orange;
+  bool _isPaiementAvance = false; // 🆕 Option paiement en avance
 
   final _phoneController = TextEditingController();
   bool _isLoading = false;
@@ -261,6 +262,7 @@ class _BookingScreenState extends State<BookingScreen> {
         heureFin: heureFin,
         montant: _calculateTotal(),
         modePaiement: _selectedPaymentMethod,
+        isPaiementAvance: _isPaiementAvance,
       );
 
       if (result.success && result.reservation != null) {
@@ -842,6 +844,40 @@ class _BookingScreenState extends State<BookingScreen> {
             );
           }).toList(),
         ),
+
+        SizedBox(height: AppConstants.mediumPadding),
+
+        // 🆕 Option paiement en avance
+        Container(
+          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Option de paiement',
+                style: AppConstants.subHeadingStyle.copyWith(fontSize: 14),
+              ),
+              SizedBox(height: AppConstants.smallPadding),
+              CheckboxListTile(
+                title: Text('Payer seulement 50% maintenant'),
+                subtitle: Text('Le reste sera payé le jour du match'),
+                value: _isPaiementAvance,
+                activeColor: AppConstants.primaryColor,
+                onChanged: (value) {
+                  setState(() {
+                    _isPaiementAvance = value ?? false;
+                  });
+                },
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -940,22 +976,48 @@ class _BookingScreenState extends State<BookingScreen> {
 
             Divider(),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total à payer',
-                  style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
-                ),
-                Text(
-                  '${total.toInt()} FCFA',
-                  style: AppConstants.subHeadingStyle.copyWith(
-                    fontSize: 18,
-                    color: AppConstants.primaryColor,
+            // 🆕 Affichage selon le type de paiement
+            if (_isPaiementAvance) ...[
+              _buildSummaryRow('Total de la réservation', '${total.toInt()} FCFA'),
+              _buildSummaryRow('Avance (50%)', '${(total * 0.5).toInt()} FCFA'),
+              _buildSummaryRow('Reste à payer le jour J', '${(total * 0.5).toInt()} FCFA'),
+              
+              SizedBox(height: AppConstants.smallPadding),
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'À payer maintenant',
+                    style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
                   ),
-                ),
-              ],
-            ),
+                  Text(
+                    '${(total * 0.5).toInt()} FCFA',
+                    style: AppConstants.subHeadingStyle.copyWith(
+                      fontSize: 18,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total à payer',
+                    style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
+                  ),
+                  Text(
+                    '${total.toInt()} FCFA',
+                    style: AppConstants.subHeadingStyle.copyWith(
+                      fontSize: 18,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -1035,10 +1097,6 @@ class _BookingScreenState extends State<BookingScreen> {
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 
@@ -1048,10 +1106,6 @@ class _BookingScreenState extends State<BookingScreen> {
         return 'Paiement via Orange Money';
       case ModePaiement.wave:
         return 'Paiement via Wave';
-      case ModePaiement.free:
-        return 'Paiement via Free Money';
-      case ModePaiement.especes:
-        return 'Paiement sur place';
     }
   }
 }

@@ -78,7 +78,8 @@ class PdfReceiptService {
 
               // QR Code si applicable
               if (reservation.statut == StatutReservation.payee ||
-                  reservation.statut == StatutReservation.confirmee)
+                  reservation.statut == StatutReservation.confirmee ||
+                  reservation.statut == StatutReservation.avance)
                 _buildQRCodeSection(reservation, font: font, fontBold: fontBold),
 
               pw.Spacer(),
@@ -177,6 +178,10 @@ class PdfReceiptService {
       case StatutReservation.payee:
         color = PdfColors.green;
         text = 'PAYÉE';
+        break;
+      case StatutReservation.avance:
+        color = PdfColors.orange;
+        text = 'AVANCE PAYÉE';
         break;
       case StatutReservation.confirmee:
         color = PdfColors.blue;
@@ -348,27 +353,137 @@ class PdfReceiptService {
             color: PdfColors.grey400,
           ),
           pw.SizedBox(height: 10),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                'MONTANT TOTAL:',
-                style: pw.TextStyle(
-                  font: fontBold,
-                  fontSize: 16,
-                  color: PdfColors.green700,
-                ),
+          
+          // Badge de statut de paiement
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: pw.BoxDecoration(
+              color: reservation.isPaiementAvance ? PdfColors.orange100 : PdfColors.green100,
+              borderRadius: pw.BorderRadius.circular(15),
+              border: pw.Border.all(
+                color: reservation.isPaiementAvance ? PdfColors.orange300 : PdfColors.green300,
               ),
-              pw.Text(
-                '${reservation.montant.toInt()} FCFA',
-                style: pw.TextStyle(
-                  font: fontBold,
-                  fontSize: 18,
-                  color: PdfColors.green700,
-                ),
+            ),
+            child: pw.Text(
+              reservation.isPaiementAvance ? 'PAIEMENT EN AVANCE' : 'PAIEMENT COMPLET',
+              style: pw.TextStyle(
+                font: fontBold,
+                fontSize: 10,
+                color: reservation.isPaiementAvance ? PdfColors.orange700 : PdfColors.green700,
               ),
-            ],
+            ),
           ),
+          
+          pw.SizedBox(height: 15),
+          
+          // Détails financiers selon le type de paiement
+          if (reservation.isPaiementAvance) ...[
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'Total réservation:',
+                  style: pw.TextStyle(font: font, fontSize: 12),
+                ),
+                pw.Text(
+                  '${reservation.montant.toInt()} FCFA',
+                  style: pw.TextStyle(font: fontBold, fontSize: 12),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'Avance payée:',
+                  style: pw.TextStyle(font: font, fontSize: 12, color: PdfColors.green700),
+                ),
+                pw.Text(
+                  '${reservation.montantAvance.toInt()} FCFA',
+                  style: pw.TextStyle(font: fontBold, fontSize: 12, color: PdfColors.green700),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'Reste à payer:',
+                  style: pw.TextStyle(font: font, fontSize: 12, color: PdfColors.orange700),
+                ),
+                pw.Text(
+                  '${reservation.montantRestant.toInt()} FCFA',
+                  style: pw.TextStyle(font: fontBold, fontSize: 12, color: PdfColors.orange700),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 10),
+            
+            // Note importante pour l'avance
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.orange50,
+                borderRadius: pw.BorderRadius.circular(5),
+                border: pw.Border.all(color: PdfColors.orange200),
+              ),
+              child: pw.Text(
+                'Le montant restant de ${reservation.montantRestant.toInt()} FCFA sera à régler le jour du match.',
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 10,
+                  color: PdfColors.orange700,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 15),
+            
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'AVANCE PAYÉE:',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 16,
+                    color: PdfColors.green700,
+                  ),
+                ),
+                pw.Text(
+                  '${reservation.montantAvance.toInt()} FCFA',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 18,
+                    color: PdfColors.green700,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'MONTANT TOTAL:',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 16,
+                    color: PdfColors.green700,
+                  ),
+                ),
+                pw.Text(
+                  '${reservation.montant.toInt()} FCFA',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 18,
+                    color: PdfColors.green700,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -511,10 +626,6 @@ class PdfReceiptService {
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 }

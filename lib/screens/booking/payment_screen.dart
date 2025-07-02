@@ -381,6 +381,73 @@ class _PaymentScreenState extends State<PaymentScreen>
             Center(
               child: Column(
                 children: [
+                  // Badge de statut de paiement
+                  if (widget.reservation.isPaiementAvance) ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppConstants.mediumPadding,
+                        vertical: AppConstants.smallPadding,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.orange.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule,
+                            size: 16,
+                            color: Colors.orange.shade700,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'PAIEMENT EN AVANCE',
+                            style: AppConstants.bodyStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppConstants.mediumPadding),
+                  ] else ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppConstants.mediumPadding,
+                        vertical: AppConstants.smallPadding,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green.shade700,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'PAIEMENT COMPLET',
+                            style: AppConstants.bodyStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppConstants.mediumPadding),
+                  ],
+
                   Text(
                     'REÇU DE RÉSERVATION',
                     style: AppConstants.subHeadingStyle.copyWith(
@@ -402,11 +469,11 @@ class _PaymentScreenState extends State<PaymentScreen>
               ),
             ),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
-            Divider(),
+            const Divider(),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
             // Détails de la réservation
             _buildReceiptRow('Terrain', widget.terrain.nom),
@@ -433,26 +500,82 @@ class _PaymentScreenState extends State<PaymentScreen>
 
             SizedBox(height: AppConstants.mediumPadding),
 
-            // Total
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'TOTAL PAYÉ',
-                  style: AppConstants.subHeadingStyle.copyWith(
-                    fontSize: 16,
-                    color: AppConstants.primaryColor,
-                  ),
+            // Détails financiers selon le type de paiement
+            if (widget.reservation.isPaiementAvance) ...[
+              _buildReceiptRow('Total réservation', '${widget.reservation.montant.toInt()} FCFA'),
+              _buildReceiptRow('Avance payée', '${widget.reservation.montantAvance.toInt()} FCFA'),
+              _buildReceiptRow('Reste à payer', '${widget.reservation.montantRestant.toInt()} FCFA'),
+
+              SizedBox(height: AppConstants.smallPadding),
+
+              Container(
+                padding: EdgeInsets.all(AppConstants.smallPadding),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+                  border: Border.all(color: Colors.orange.shade200),
                 ),
-                Text(
-                  '${widget.reservation.montant.toInt()} FCFA',
-                  style: AppConstants.subHeadingStyle.copyWith(
+                child: Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.orange.shade600, size: 16),
+                    SizedBox(width: AppConstants.smallPadding),
+                    Expanded(
+                      child: Text(
+                        'Le montant restant de ${widget.reservation.montantRestant.toInt()} FCFA sera à régler le jour du match.',
+                        style: AppConstants.bodyStyle.copyWith(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: AppConstants.mediumPadding),
+
+              // Total payé maintenant
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'AVANCE PAYÉE',
+                    style: AppConstants.subHeadingStyle.copyWith(
+                      fontSize: 16,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                  Text(
+                    '${widget.reservation.montantAvance.toInt()} FCFA',
+                    style: AppConstants.subHeadingStyle.copyWith(
                     fontSize: 18,
                     color: AppConstants.primaryColor,
                   ),
                 ),
               ],
             ),
+            ] else ...[
+              // Paiement complet
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'TOTAL PAYÉ',
+                    style: AppConstants.subHeadingStyle.copyWith(
+                      fontSize: 16,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                  Text(
+                    '${widget.reservation.montant.toInt()} FCFA',
+                    style: AppConstants.subHeadingStyle.copyWith(
+                      fontSize: 18,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
 
             const SizedBox(height: AppConstants.largePadding),
 
@@ -591,17 +714,6 @@ class _PaymentScreenState extends State<PaymentScreen>
                 backgroundColor: Colors.white,
               ),
             ),
-
-            const SizedBox(height: AppConstants.mediumPadding),
-
-            Text(
-              'Code: ${widget.reservation.qrCode}',
-              style: AppConstants.bodyStyle.copyWith(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-                fontFamily: 'monospace',
-              ),
-            ),
           ],
         ),
       ),
@@ -723,10 +835,6 @@ class _PaymentScreenState extends State<PaymentScreen>
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 }

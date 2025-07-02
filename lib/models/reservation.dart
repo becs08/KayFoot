@@ -6,6 +6,9 @@ class Reservation {
   final String heureDebut;
   final String heureFin;
   final double montant;
+  final double montantAvance;
+  final double montantRestant;
+  final bool isPaiementAvance;
   final StatutReservation statut;
   final ModePaiement modePaiement;
   final String? transactionId;
@@ -21,6 +24,9 @@ class Reservation {
     required this.heureDebut,
     required this.heureFin,
     required this.montant,
+    required this.montantAvance,
+    required this.montantRestant,
+    required this.isPaiementAvance,
     required this.statut,
     required this.modePaiement,
     this.transactionId,
@@ -30,6 +36,8 @@ class Reservation {
   });
 
   factory Reservation.fromJson(Map<String, dynamic> json) {
+    final montant = json['montant'].toDouble();
+    final isPaiementAvance = json['isPaiementAvance'] ?? false;
     return Reservation(
       id: json['id'],
       joueurId: json['joueurId'],
@@ -37,7 +45,10 @@ class Reservation {
       date: DateTime.parse(json['date']),
       heureDebut: json['heureDebut'],
       heureFin: json['heureFin'],
-      montant: json['montant'].toDouble(),
+      montant: montant,
+      montantAvance: json['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+      montantRestant: json['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+      isPaiementAvance: isPaiementAvance,
       statut: StatutReservation.values.firstWhere(
         (e) => e.toString() == 'StatutReservation.${json['statut']}',
       ),
@@ -62,6 +73,9 @@ class Reservation {
       'heureDebut': heureDebut,
       'heureFin': heureFin,
       'montant': montant,
+      'montantAvance': montantAvance,
+      'montantRestant': montantRestant,
+      'isPaiementAvance': isPaiementAvance,
       'statut': statut.toString().split('.').last,
       'modePaiement': modePaiement.toString().split('.').last,
       'transactionId': transactionId,
@@ -79,6 +93,9 @@ class Reservation {
     String? heureDebut,
     String? heureFin,
     double? montant,
+    double? montantAvance,
+    double? montantRestant,
+    bool? isPaiementAvance,
     StatutReservation? statut,
     ModePaiement? modePaiement,
     String? transactionId,
@@ -94,6 +111,9 @@ class Reservation {
       heureDebut: heureDebut ?? this.heureDebut,
       heureFin: heureFin ?? this.heureFin,
       montant: montant ?? this.montant,
+      montantAvance: montantAvance ?? this.montantAvance,
+      montantRestant: montantRestant ?? this.montantRestant,
+      isPaiementAvance: isPaiementAvance ?? this.isPaiementAvance,
       statut: statut ?? this.statut,
       modePaiement: modePaiement ?? this.modePaiement,
       transactionId: transactionId ?? this.transactionId,
@@ -107,6 +127,7 @@ class Reservation {
 enum StatutReservation {
   enAttente,
   confirmee,
+  avance,
   payee,
   annulee,
   terminee,
@@ -115,6 +136,4 @@ enum StatutReservation {
 enum ModePaiement {
   orange,
   wave,
-  free,
-  especes,
 }

@@ -35,15 +35,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       // Recharger l'utilisateur depuis Firestore pour avoir les dernières données
       await AuthService().reloadCurrentUser();
-      setState(() {
-        _user = AuthService().currentUser;
-      });
+      if (mounted) {
+        setState(() {
+          _user = AuthService().currentUser;
+        });
+      }
       print('👤 Utilisateur rechargé: ${_user?.photo}');
     } catch (e) {
       print('❌ Erreur rechargement utilisateur: $e');
-      setState(() {
-        _user = AuthService().currentUser;
-      });
+      if (mounted) {
+        setState(() {
+          _user = AuthService().currentUser;
+        });
+      }
     }
   }
 
@@ -52,20 +56,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = AuthService().currentUser;
       if (user != null) {
         final stats = await _statsService.calculateUserStats(user.id);
-        setState(() {
-          _userStats = stats;
-          _isLoadingStats = false;
-        });
+        
+        // Sauvegarder les statistiques dans Firestore
+        await _statsService.updateUserStats(user.id);
+        
+        if (mounted) {
+          setState(() {
+            _userStats = stats;
+            _isLoadingStats = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingStats = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur chargement stats: $e');
+      if (mounted) {
         setState(() {
           _isLoadingStats = false;
         });
       }
-    } catch (e) {
-      print('❌ Erreur chargement stats: $e');
-      setState(() {
-        _isLoadingStats = false;
-      });
     }
   }
 
@@ -169,9 +183,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Sélectionner une image depuis la galerie
   Future<void> _pickImageFromGallery() async {
     try {
-      setState(() {
-        _isUploadingPhoto = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = true;
+        });
+      }
 
       // Sélectionner l'image
       final File? imageFile = await _fallbackImageService.pickImageFromGallery();
@@ -192,18 +208,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       _showError('Erreur lors de la sélection de l\'image: ${e.toString()}');
     } finally {
-      setState(() {
-        _isUploadingPhoto = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
     }
   }
 
   /// Prendre une photo avec l'appareil photo
   Future<void> _pickImageFromCamera() async {
     try {
-      setState(() {
-        _isUploadingPhoto = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = true;
+        });
+      }
 
       // Prendre la photo
       final File? imageFile = await _fallbackImageService.pickImageFromCamera();
@@ -224,9 +244,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       _showError('Erreur lors de la prise de photo: ${e.toString()}');
     } finally {
-      setState(() {
-        _isUploadingPhoto = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
     }
   }
 
@@ -266,16 +288,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final result = await AuthService().updateProfilePhoto(downloadUrl);
 
       if (result.success) {
-        setState(() {
-          _user = result.user;
-        });
+        if (mounted) {
+          setState(() {
+            _user = result.user;
+          });
+        }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Photo de profil mise à jour avec succès'),
-            backgroundColor: AppConstants.successColor,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Photo de profil mise à jour avec succès'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+        }
       } else {
         _showError(result.message);
       }
@@ -285,12 +311,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppConstants.errorColor,
+        ),
+      );
+    }
   }
 
   @override

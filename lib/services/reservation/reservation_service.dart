@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/reservation.dart';
 import '../Authentification/auth_service.dart';
+import '../profil/stats_update_service.dart';
 
 class ReservationService {
   // Singleton pattern
@@ -10,6 +11,7 @@ class ReservationService {
   ReservationService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StatsUpdateService _statsService = StatsUpdateService();
 
   /// 📅 Crée une nouvelle réservation avec Firestore
   Future<ReservationResult> createReservation({
@@ -19,6 +21,7 @@ class ReservationService {
     required String heureFin,
     required double montant,
     required ModePaiement modePaiement,
+    bool isPaiementAvance = false,
   }) async {
     try {
       print('📅 === CRÉATION RÉSERVATION ===');
@@ -55,12 +58,22 @@ class ReservationService {
       print('💳 Traitement du paiement...');
       await Future.delayed(Duration(seconds: 2));
 
-      // 🎫 Générer un QR code unique
-      final qrCode = _generateQRCode();
+      // 🎫 Générer un QR code unique et le code de réservation
+      final reservationCode = _generateReservationCode();
+      final qrCode = 'https://keen-genie-dbd23d.netlify.app/?code=$reservationCode';
       final transactionId = _generateTransactionId();
 
       print('🎫 QR Code généré: $qrCode');
       print('💰 Transaction ID: $transactionId');
+
+      // 🔥 Calculer les montants selon le type de paiement
+      final montantAvance = isPaiementAvance ? montant * 0.5 : montant;
+      final montantRestant = isPaiementAvance ? montant * 0.5 : 0.0;
+
+      print('💰 Montant total: ${montant.toInt()} FCFA');
+      print('💰 Montant avance: ${montantAvance.toInt()} FCFA');
+      print('💰 Montant restant: ${montantRestant.toInt()} FCFA');
+      print('💰 Paiement en avance: $isPaiementAvance');
 
       // 🔥 Créer la réservation dans Firestore
       final reservationData = {
@@ -70,10 +83,14 @@ class ReservationService {
         'heureDebut': heureDebut,
         'heureFin': heureFin,
         'montant': montant,
-        'statut': 'payee', // Directement payée après paiement réussi
+        'montantAvance': montantAvance,
+        'montantRestant': montantRestant,
+        'isPaiementAvance': isPaiementAvance,
+        'statut': isPaiementAvance ? 'avance' : 'payee', // Avance ou payée selon le type de paiement
         'modePaiement': modePaiement.toString().split('.').last,
         'transactionId': transactionId,
         'qrCode': qrCode,
+        'reservationCode': reservationCode,
         'dateCreation': FieldValue.serverTimestamp(),
         'dateModification': FieldValue.serverTimestamp(),
       };
@@ -82,6 +99,9 @@ class ReservationService {
       final docRef = await _firestore.collection('reservations').add(reservationData);
 
       print('✅ Réservation créée avec ID: ${docRef.id}');
+
+      // 📊 Mettre à jour les statistiques en arrière-plan
+      _statsService.onReservationCreated(user.id, terrainId);
 
       // 📊 Construire l'objet Reservation pour la réponse
       final reservation = Reservation(
@@ -92,7 +112,10 @@ class ReservationService {
         heureDebut: heureDebut,
         heureFin: heureFin,
         montant: montant,
-        statut: StatutReservation.payee,
+        montantAvance: montantAvance,
+        montantRestant: montantRestant,
+        isPaiementAvance: isPaiementAvance,
+        statut: isPaiementAvance ? StatutReservation.avance : StatutReservation.payee,
         modePaiement: modePaiement,
         transactionId: transactionId,
         qrCode: qrCode,
@@ -134,7 +157,7 @@ class ReservationService {
           .where('terrainId', isEqualTo: terrainId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-          .where('statut', whereIn: ['confirmee', 'payee']) // Exclure les annulées
+          .where('statut', whereIn: ['confirmee', 'payee', 'avance']) // Exclure les annulées
           .get();
 
       print('📋 ${query.docs.length} réservation(s) trouvée(s) pour ce jour');
@@ -177,6 +200,8 @@ class ReservationService {
 
       final reservations = query.docs.map((doc) {
         final data = doc.data();
+        final montant = data['montant'].toDouble();
+        final isPaiementAvance = data['isPaiementAvance'] ?? false;
         return Reservation(
           id: doc.id,
           joueurId: data['joueurId'],
@@ -184,7 +209,10 @@ class ReservationService {
           date: (data['date'] as Timestamp).toDate(),
           heureDebut: data['heureDebut'],
           heureFin: data['heureFin'],
-          montant: data['montant'].toDouble(),
+          montant: montant,
+          montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+          montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+          isPaiementAvance: isPaiementAvance,
           statut: _parseStatut(data['statut']),
           modePaiement: _parseModePaiement(data['modePaiement']),
           transactionId: data['transactionId'],
@@ -217,6 +245,8 @@ class ReservationService {
       }
 
       final data = doc.data()!;
+      final montant = data['montant'].toDouble();
+      final isPaiementAvance = data['isPaiementAvance'] ?? false;
       return Reservation(
         id: doc.id,
         joueurId: data['joueurId'],
@@ -224,7 +254,10 @@ class ReservationService {
         date: (data['date'] as Timestamp).toDate(),
         heureDebut: data['heureDebut'],
         heureFin: data['heureFin'],
-        montant: data['montant'].toDouble(),
+        montant: montant,
+        montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+        montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+        isPaiementAvance: isPaiementAvance,
         statut: _parseStatut(data['statut']),
         modePaiement: _parseModePaiement(data['modePaiement']),
         transactionId: data['transactionId'],
@@ -259,6 +292,8 @@ class ReservationService {
       }
 
       final data = doc.data()!;
+      final montant = data['montant'].toDouble();
+      final isPaiementAvance = data['isPaiementAvance'] ?? false;
       final reservation = Reservation(
         id: doc.id,
         joueurId: data['joueurId'],
@@ -266,7 +301,10 @@ class ReservationService {
         date: (data['date'] as Timestamp).toDate(),
         heureDebut: data['heureDebut'],
         heureFin: data['heureFin'],
-        montant: data['montant'].toDouble(),
+        montant: montant,
+        montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+        montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+        isPaiementAvance: isPaiementAvance,
         statut: _parseStatut(data['statut']),
         modePaiement: _parseModePaiement(data['modePaiement']),
         transactionId: data['transactionId'],
@@ -299,6 +337,15 @@ class ReservationService {
       });
 
       print('✅ Réservation annulée avec succès');
+
+      // 📊 Mettre à jour les statistiques (changement de statut)
+      final oldStatus = _parseStatut(data['statut']).toString().split('.').last;
+      _statsService.onReservationStatusChanged(
+        reservation.joueurId, 
+        reservation.terrainId, 
+        oldStatus, 
+        'annulee'
+      );
 
       return ReservationResult(
         success: true,
@@ -334,6 +381,8 @@ class ReservationService {
       }
 
       final data = doc.data()!;
+      final montant = data['montant'].toDouble();
+      final isPaiementAvance = data['isPaiementAvance'] ?? false;
       final reservation = Reservation(
         id: doc.id,
         joueurId: data['joueurId'],
@@ -341,7 +390,10 @@ class ReservationService {
         date: (data['date'] as Timestamp).toDate(),
         heureDebut: data['heureDebut'],
         heureFin: data['heureFin'],
-        montant: data['montant'].toDouble(),
+        montant: montant,
+        montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+        montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+        isPaiementAvance: isPaiementAvance,
         statut: _parseStatut(data['statut']),
         modePaiement: _parseModePaiement(data['modePaiement']),
         transactionId: data['transactionId'],
@@ -401,6 +453,8 @@ class ReservationService {
 
       return query.docs.map((doc) {
         final data = doc.data();
+        final montant = data['montant'].toDouble();
+        final isPaiementAvance = data['isPaiementAvance'] ?? false;
         return Reservation(
           id: doc.id,
           joueurId: data['joueurId'],
@@ -408,7 +462,10 @@ class ReservationService {
           date: (data['date'] as Timestamp).toDate(),
           heureDebut: data['heureDebut'],
           heureFin: data['heureFin'],
-          montant: data['montant'].toDouble(),
+          montant: montant,
+          montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+          montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+          isPaiementAvance: isPaiementAvance,
           statut: _parseStatut(data['statut']),
           modePaiement: _parseModePaiement(data['modePaiement']),
           transactionId: data['transactionId'],
@@ -442,8 +499,19 @@ class ReservationService {
     return int.parse(parts[0]) * 60 + int.parse(parts[1]);
   }
 
-  /// 🎫 Génère un QR code unique
+  /// 🎫 Génère un QR code unique (URL vers la page de reçu)
   String _generateQRCode() {
+    final random = Random();
+    final chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final reservationCode = List.generate(12, (index) => chars[random.nextInt(chars.length)]).join();
+    
+    // Créer une URL qui pointe vers la page de reçu
+    // URL de votre site Netlify déployé
+    return 'https://keen-genie-dbd23d.netlify.app/?code=$reservationCode';
+  }
+
+  /// 🎫 Génère seulement le code de réservation (pour stockage en DB)
+  String _generateReservationCode() {
     final random = Random();
     final chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return List.generate(12, (index) => chars[random.nextInt(chars.length)]).join();
@@ -461,6 +529,8 @@ class ReservationService {
         return StatutReservation.enAttente;
       case 'confirmee':
         return StatutReservation.confirmee;
+      case 'avance':
+        return StatutReservation.avance;
       case 'payee':
         return StatutReservation.payee;
       case 'annulee':
@@ -479,12 +549,10 @@ class ReservationService {
         return ModePaiement.orange;
       case 'wave':
         return ModePaiement.wave;
-      case 'free':
-        return ModePaiement.free;
-      case 'especes':
-        return ModePaiement.especes;
+      case 'free': // Fallback pour les anciennes données
+      case 'especes': // Fallback pour les anciennes données
       default:
-        return ModePaiement.orange;
+        return ModePaiement.orange; // Mode par défaut
     }
   }
 
@@ -506,7 +574,7 @@ class ReservationService {
           .where('terrainId', isEqualTo: terrainId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-          .where('statut', whereIn: ['confirmee', 'payee']) // Seulement les réservations actives
+          .where('statut', whereIn: ['confirmee', 'payee', 'avance']) // Seulement les réservations actives
           .get();
 
       // Extraire les créneaux occupés

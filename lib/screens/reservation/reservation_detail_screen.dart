@@ -136,7 +136,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Reçu PDF partagé avec succès'),
             backgroundColor: AppConstants.successColor,
           ),
@@ -172,7 +172,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Reçu PDF partagé avec succès'),
             backgroundColor: AppConstants.successColor,
           ),
@@ -207,7 +207,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Row(
               children: [
                 Icon(Icons.copy, color: Colors.white, size: 20),
@@ -244,7 +244,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Row(
               children: [
                 Icon(Icons.text_fields, color: Colors.white, size: 20),
@@ -268,7 +268,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
       context: context,
       builder: (BuildContext context) {
         return Container(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -276,7 +276,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 'Options de reçu',
                 style: AppConstants.subHeadingStyle.copyWith(fontSize: 18),
               ),
-              SizedBox(height: AppConstants.mediumPadding),
+              const SizedBox(height: AppConstants.mediumPadding),
 
               // Télécharger PDF
               ListTile(
@@ -331,7 +331,8 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   }
 
   bool _canCancelReservation() {
-    if (widget.reservation.statut != StatutReservation.payee) {
+    if (widget.reservation.statut != StatutReservation.payee && 
+        widget.reservation.statut != StatutReservation.avance) {
       return false;
     }
 
@@ -348,10 +349,11 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   }
 
   bool _isReservationActive() {
-    // Une réservation est considérée comme active si elle est payée ou confirmée
+    // Une réservation est considérée comme active si elle est payée, confirmée ou en avance
     // et qu'elle n'est pas annulée ou terminée
     return widget.reservation.statut == StatutReservation.payee ||
-           widget.reservation.statut == StatutReservation.confirmee;
+           widget.reservation.statut == StatutReservation.confirmee ||
+           widget.reservation.statut == StatutReservation.avance;
   }
 
   /// Calcule la durée de la réservation en heures
@@ -413,29 +415,30 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                   // Statut de la réservation
                   _buildStatusCard(),
 
-                  SizedBox(height: AppConstants.mediumPadding),
+                  const SizedBox(height: AppConstants.mediumPadding),
 
                   // Informations du terrain
                   _buildTerrainInfo(),
 
-                  SizedBox(height: AppConstants.mediumPadding),
+                  const SizedBox(height: AppConstants.mediumPadding),
 
                   // Détails de la réservation
                   _buildReservationDetails(),
 
-                  SizedBox(height: AppConstants.mediumPadding),
+                  const SizedBox(height: AppConstants.mediumPadding),
 
                   // Informations de paiement
                   _buildPaymentInfo(),
 
-                  SizedBox(height: AppConstants.mediumPadding),
+                  const SizedBox(height: AppConstants.mediumPadding),
 
                   // QR Code (si applicable)
                   if (widget.reservation.statut == StatutReservation.payee ||
-                      widget.reservation.statut == StatutReservation.confirmee)
+                      widget.reservation.statut == StatutReservation.confirmee ||
+                      widget.reservation.statut == StatutReservation.avance)
                     _buildQRCode(),
 
-                  SizedBox(height: AppConstants.largePadding),
+                  const SizedBox(height: AppConstants.largePadding),
 
                   // Boutons d'action
                   _buildActionButtons(),
@@ -453,17 +456,22 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     switch (widget.reservation.statut) {
       case StatutReservation.enAttente:
         color = AppConstants.warningColor;
-        message = 'Votre réservation est en attente de confirmation';
-        icon = Icons.schedule;
+        message = 'Avance payée - Reste à payer le jour du match';
+        icon = Icons.payment;
         break;
       case StatutReservation.confirmee:
         color = Colors.blue;
         message = 'Votre réservation est confirmée';
         icon = Icons.check_circle_outline;
         break;
+      case StatutReservation.avance:
+        color = Colors.orange;
+        message = 'Avance payée - Reste à payer le jour du match';
+        icon = Icons.payment;
+        break;
       case StatutReservation.payee:
         color = AppConstants.successColor;
-        message = 'Réservation payée et confirmée';
+        message = 'Réservation confirmée';
         icon = Icons.check_circle;
         break;
       case StatutReservation.annulee:
@@ -481,7 +489,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     return Card(
       color: color.withOpacity(0.1),
       child: Padding(
-        padding: EdgeInsets.all(AppConstants.mediumPadding),
+        padding: const EdgeInsets.all(AppConstants.mediumPadding),
         child: Row(
           children: [
             Icon(
@@ -490,7 +498,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               size: 32,
             ),
 
-            SizedBox(width: AppConstants.mediumPadding),
+            const SizedBox(width: AppConstants.mediumPadding),
 
             Expanded(
               child: Column(
@@ -504,7 +512,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     ),
                   ),
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
                   Text(
                     message,
@@ -522,9 +530,31 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     );
   }
 
+  Widget _buildPaymentStatusBadge() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.largePadding,
+          vertical: AppConstants.mediumPadding,
+        ),
+        decoration: BoxDecoration(
+          color: widget.reservation.isPaiementAvance
+              ? Colors.orange.shade100
+              : Colors.green.shade100,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: widget.reservation.isPaiementAvance
+                ? Colors.orange.shade300
+                : Colors.green.shade300,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTerrainInfo() {
     if (_terrain == null) {
-      return Card(
+      return const Card(
         child: Padding(
           padding: EdgeInsets.all(AppConstants.mediumPadding),
           child: Text('Informations du terrain non disponibles'),
@@ -701,11 +731,59 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               value: _getPaymentMethodName(widget.reservation.modePaiement),
             ),
 
-            _buildDetailRow(
-              icon: Icons.attach_money,
-              label: 'Montant',
-              value: '${widget.reservation.montant.toInt()} FCFA',
-            ),
+            // Affichage selon le type de paiement
+            if (widget.reservation.isPaiementAvance) ...[
+              _buildDetailRow(
+                icon: Icons.account_balance,
+                label: 'Total réservation',
+                value: '${widget.reservation.montant.toInt()} FCFA',
+              ),
+              _buildDetailRow(
+                icon: Icons.payment,
+                label: 'Avance payée',
+                value: '${widget.reservation.montantAvance.toInt()} FCFA',
+                valueColor: Colors.green.shade600,
+              ),
+              _buildDetailRow(
+                icon: Icons.schedule_outlined,
+                label: 'Reste à payer',
+                value: '${widget.reservation.montantRestant.toInt()} FCFA',
+                valueColor: Colors.orange.shade600,
+              ),
+
+              // Note sur le paiement restant
+              Container(
+                margin: EdgeInsets.only(top: AppConstants.smallPadding),
+                padding: EdgeInsets.all(AppConstants.smallPadding),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.orange.shade600, size: 16),
+                    SizedBox(width: AppConstants.smallPadding),
+                    Expanded(
+                      child: Text(
+                        'Le montant restant sera à régler le jour du match',
+                        style: AppConstants.bodyStyle.copyWith(
+                          fontSize: 12,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              _buildDetailRow(
+                icon: Icons.attach_money,
+                label: 'Montant total payé',
+                value: '${widget.reservation.montant.toInt()} FCFA',
+                valueColor: Colors.green.shade600,
+              ),
+            ],
 
             if (widget.reservation.transactionId != null)
               _buildDetailRow(
@@ -774,17 +852,6 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: AppConstants.smallPadding),
-
-            Text(
-              'Code: ${widget.reservation.qrCode}',
-              style: AppConstants.bodyStyle.copyWith(
-                color: Colors.grey.shade600,
-                fontSize: 11,
-                fontFamily: 'monospace',
               ),
             ),
           ],
@@ -929,7 +996,8 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
           ),
         ],
 
-        if (!canCancel && widget.reservation.statut == StatutReservation.payee) ...[
+        if (!canCancel && (widget.reservation.statut == StatutReservation.payee || 
+                          widget.reservation.statut == StatutReservation.avance)) ...[
           const SizedBox(height: AppConstants.smallPadding),
 
           Text(
@@ -949,9 +1017,10 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     required IconData icon,
     required String label,
     required String value,
+    Color? valueColor,
   }) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -961,7 +1030,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             color: Colors.grey.shade600,
           ),
 
-          SizedBox(width: AppConstants.mediumPadding),
+          const SizedBox(width: AppConstants.mediumPadding),
 
           Expanded(
             child: Column(
@@ -980,6 +1049,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                   style: AppConstants.bodyStyle.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
+                    color: valueColor,
                   ),
                 ),
               ],
@@ -1014,9 +1084,11 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   String _getStatusText(StatutReservation statut) {
     switch (statut) {
       case StatutReservation.enAttente:
-        return 'En attente';
+        return 'Avance payée';
       case StatutReservation.confirmee:
         return 'Confirmée';
+      case StatutReservation.avance:
+        return 'Avance payée';
       case StatutReservation.payee:
         return 'Payée';
       case StatutReservation.annulee:
@@ -1032,10 +1104,6 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 
@@ -1049,7 +1117,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
           color: AppConstants.primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppConstants.smallRadius),
         ),
-        child: Icon(
+        child: const Icon(
           Icons.sports_soccer,
           color: AppConstants.primaryColor,
           size: 30,
@@ -1068,7 +1136,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 4,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1082,7 +1150,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 height: 60,
                 placeholder: (context, url) => Container(
                   color: AppConstants.primaryColor.withOpacity(0.1),
-                  child: Center(
+                  child: const Center(
                     child: SizedBox(
                       width: 16,
                       height: 16,
@@ -1097,7 +1165,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: AppConstants.primaryColor.withOpacity(0.1),
-                  child: Icon(
+                  child: const Icon(
                     Icons.sports_soccer,
                     color: AppConstants.primaryColor,
                     size: 30,
@@ -1106,7 +1174,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
               )
             : Container(
                 color: AppConstants.primaryColor.withOpacity(0.1),
-                child: Icon(
+                child: const Icon(
                   Icons.sports_soccer,
                   color: AppConstants.primaryColor,
                   size: 30,

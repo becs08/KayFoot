@@ -41,28 +41,34 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Récupérer les terrains populaires basés sur le nombre de réservations
       final terrainsPopulaires = await TerrainService().getTerrainsPopulaires(limit: 3);
-      setState(() {
-        _featuredTerrainsWithCount.clear();
-        _featuredTerrainsWithCount.addAll(terrainsPopulaires);
-        _featuredTerrains.clear();
-        // Extraire uniquement les objets Terrain de TerrainWithReservationCount
-        _featuredTerrains.addAll(terrainsPopulaires.map((t) => t.terrain).toList());
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _featuredTerrainsWithCount.clear();
+          _featuredTerrainsWithCount.addAll(terrainsPopulaires);
+          _featuredTerrains.clear();
+          // Extraire uniquement les objets Terrain de TerrainWithReservationCount
+          _featuredTerrains.addAll(terrainsPopulaires.map((t) => t.terrain).toList());
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Erreur chargement terrains populaires: $e');
       // En cas d'erreur, fallback sur tous les terrains
       try {
         final terrains = await TerrainService().getAllTerrains();
-        setState(() {
-          _featuredTerrains.clear();
-          _featuredTerrains.addAll(terrains.take(3));
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _featuredTerrains.clear();
+            _featuredTerrains.addAll(terrains.take(3));
+            _isLoading = false;
+          });
+        }
       } catch (e2) {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -72,20 +78,30 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = AuthService().currentUser;
       if (user != null) {
         final stats = await _statsService.calculateUserStats(user.id);
-        setState(() {
-          _userStats = stats;
-          _isLoadingStats = false;
-        });
+        
+        // Sauvegarder les statistiques dans Firestore
+        await _statsService.updateUserStats(user.id);
+        
+        if (mounted) {
+          setState(() {
+            _userStats = stats;
+            _isLoadingStats = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingStats = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur chargement stats: $e');
+      if (mounted) {
         setState(() {
           _isLoadingStats = false;
         });
       }
-    } catch (e) {
-      print('❌ Erreur chargement stats: $e');
-      setState(() {
-        _isLoadingStats = false;
-      });
     }
   }
 

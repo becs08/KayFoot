@@ -65,10 +65,12 @@ class _TerrainListScreenState extends State<TerrainListScreen> {
       });
       _applyFilters();
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showError('Erreur lors du chargement des terrains');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showError('Erreur lors du chargement des terrains');
+      }
     }
   }
 

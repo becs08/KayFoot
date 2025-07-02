@@ -44,8 +44,8 @@ class StatisticsService {
         // Vérifier si la réservation est dans le passé
         final isMatchPasse = _isReservationPasse(data);
 
-        // Compter seulement les matchs terminés OU les matchs payés qui sont dans le passé
-        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
+        // Compter seulement les matchs terminés OU les matchs payés/avance qui sont dans le passé
+        if (statut == 'terminee' || ((statut == 'payee' || statut == 'avance') && isMatchPasse)) {
           matchsJoues++;
 
           // Calculer temps de jeu
@@ -151,15 +151,15 @@ class StatisticsService {
         // Vérifier si la réservation est dans le passé pour les statistiques de revenus
         final isMatchPasse = _isReservationPasse(data);
 
-        // Compter seulement les réservations terminées OU payées qui sont dans le passé
-        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
+        // Compter seulement les réservations terminées OU payées/avance qui sont dans le passé
+        if (statut == 'terminee' || ((statut == 'payee' || statut == 'avance') && isMatchPasse)) {
           reservationsTerminees++;
           final montant = (data['montant'] as num?)?.toDouble() ?? 0.0;
           chiffreAffaires += montant;
         }
 
         // Analyser créneaux populaires (toutes les réservations confirmées)
-        if (heureDebut != null && (statut == 'payee' || statut == 'confirmee' || statut == 'terminee')) {
+        if (heureDebut != null && (statut == 'payee' || statut == 'avance' || statut == 'confirmee' || statut == 'terminee')) {
           final creneau = _getCreneau(heureDebut);
           creneauxPopulaires[creneau] = (creneauxPopulaires[creneau] ?? 0) + 1;
         }
@@ -252,8 +252,8 @@ class StatisticsService {
         // Vérifier si la réservation est dans le passé
         final isMatchPasse = _isReservationPasse(data);
         
-        // Compter seulement les réservations terminées OU payées qui sont dans le passé
-        if (statut == 'terminee' || (statut == 'payee' && isMatchPasse)) {
+        // Compter seulement les réservations terminées OU payées/avance qui sont dans le passé
+        if (statut == 'terminee' || ((statut == 'payee' || statut == 'avance') && isMatchPasse)) {
           reservationsPayees++;
           final montant = (data['montant'] as num?)?.toDouble() ?? 0.0;
           revenus += montant;

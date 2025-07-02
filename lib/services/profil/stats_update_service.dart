@@ -38,14 +38,14 @@ class StatsUpdateService {
     try {
       print('📊 Mise à jour stats après changement statut: $oldStatus → $newStatus');
       
-      // Si la réservation est maintenant terminée
-      if (newStatus == 'terminee' || newStatus == 'payee') {
+      // Si la réservation est maintenant terminée ou payée (avance incluse)
+      if (newStatus == 'terminee' || newStatus == 'payee' || newStatus == 'avance') {
         await _updateUserStatsAsync(userId);
         await _updateTerrainStatsAsync(terrainId);
       }
       
-      // Si une réservation payée est annulée
-      if (oldStatus == 'payee' && newStatus == 'annulee') {
+      // Si une réservation payée/avance est annulée
+      if ((oldStatus == 'payee' || oldStatus == 'avance') && newStatus == 'annulee') {
         await _updateUserStatsAsync(userId);
         await _updateTerrainStatsAsync(terrainId);
       }

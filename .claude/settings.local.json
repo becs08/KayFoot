@@ -6,7 +6,9 @@
       "Bash(cp:*)",
       "Bash(touch:*)",
       "Bash(powershell.exe:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

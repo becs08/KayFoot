@@ -83,10 +83,12 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         });
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showError('Erreur lors du chargement des réservations');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showError('Erreur lors du chargement des réservations');
+      }
     }
   }
 
@@ -134,8 +136,8 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Supprimer de l\'historique'),
-        content: Column(
+        title: const Text('Supprimer de l\'historique'),
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -453,55 +455,115 @@ class _ReservationsScreenState extends State<ReservationsScreen>
 
               SizedBox(height: AppConstants.smallPadding),
 
-              Row(
-                children: [
-                  Icon(
-                    Icons.payment,
-                    size: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    '${reservation.montant.toInt()} FCFA',
-                    style: AppConstants.bodyStyle.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+              // Informations de paiement selon le type
+              if (reservation.isPaiementAvance) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payment,
+                      size: 16,
+                      color: Colors.green.shade600,
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Payé: ${reservation.montantAvance.toInt()} FCFA',
+                      style: AppConstants.bodyStyle.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green.shade600,
+                      ),
+                    ),
+                  ],
+                ),
 
-                  SizedBox(width: AppConstants.mediumPadding),
+                const SizedBox(height: 2),
 
-                  Icon(
-                    Icons.account_balance_wallet,
-                    size: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    _getPaymentMethodName(reservation.modePaiement),
-                    style: AppConstants.bodyStyle.copyWith(fontSize: 13),
-                  ),
-                ],
-              ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_outlined,
+                      size: 16,
+                      color: Colors.orange.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Reste: ${reservation.montantRestant.toInt()} FCFA',
+                      style: AppConstants.bodyStyle.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade600,
+                      ),
+                    ),
+                  ],
+                ),
 
-              if (!showPast && reservation.statut == StatutReservation.payee) ...[
-                SizedBox(height: AppConstants.mediumPadding),
+                const SizedBox(height: AppConstants.smallPadding),
+
+                Row(
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getPaymentMethodName(reservation.modePaiement),
+                      style: AppConstants.bodyStyle.copyWith(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payment,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${reservation.montant.toInt()} FCFA',
+                      style: AppConstants.bodyStyle.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(width: AppConstants.mediumPadding),
+
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getPaymentMethodName(reservation.modePaiement),
+                      style: AppConstants.bodyStyle.copyWith(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ],
+
+              if (!showPast && (reservation.statut == StatutReservation.payee || reservation.statut == StatutReservation.avance)) ...[
+                const SizedBox(height: AppConstants.mediumPadding),
 
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _cancelReservation(reservation),
-                        icon: Icon(Icons.cancel, size: 16),
-                        label: Text('Annuler'),
+                        icon: const Icon(Icons.cancel, size: 16),
+                        label: const Text('Annuler'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppConstants.errorColor,
-                          side: BorderSide(color: AppConstants.errorColor),
+                          side: const BorderSide(color: AppConstants.errorColor),
                         ),
                       ),
                     ),
 
-                    SizedBox(width: AppConstants.smallPadding),
+                    const SizedBox(width: AppConstants.smallPadding),
 
                     Expanded(
                       child: ElevatedButton.icon(
@@ -514,8 +576,8 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                             ),
                           );
                         },
-                        icon: Icon(Icons.qr_code, size: 16),
-                        label: Text('QR Code'),
+                        icon: const Icon(Icons.qr_code, size: 16),
+                        label: const Text('QR Code'),
                       ),
                     ),
                   ],
@@ -553,8 +615,8 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                             ),
                           );
                         },
-                        icon: Icon(Icons.visibility, size: 16),
-                        label: Text('Voir détails'),
+                        icon: const Icon(Icons.visibility, size: 16),
+                        label: const Text('Voir détails'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey.shade600,
                         ),
@@ -587,6 +649,11 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         label = 'Confirmée';
         icon = Icons.check_circle_outline;
         break;
+      case StatutReservation.avance:
+        color = Colors.orange;
+        label = 'Avance payée';
+        icon = Icons.payment;
+        break;
       case StatutReservation.payee:
         color = AppConstants.successColor;
         label = 'Payée';
@@ -605,7 +672,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.smallPadding,
         vertical: 4,
       ),
@@ -638,7 +705,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
-    final difference = date.difference(now).inDays;
+/*    final difference = date.difference(now).inDays;
 
     if (difference == 0) {
       return 'Aujourd\'hui';
@@ -646,14 +713,14 @@ class _ReservationsScreenState extends State<ReservationsScreen>
       return 'Demain';
     } else if (difference == -1) {
       return 'Hier';
-    } else {
+    } else {*/
       const months = [
         'jan', 'fév', 'mar', 'avr', 'mai', 'jun',
         'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'
       ];
 
       return '${date.day} ${months[date.month - 1]} ${date.year}';
-    }
+
   }
 
   String _getPaymentMethodName(ModePaiement method) {
@@ -662,10 +729,6 @@ class _ReservationsScreenState extends State<ReservationsScreen>
         return 'Orange Money';
       case ModePaiement.wave:
         return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
     }
   }
 }
