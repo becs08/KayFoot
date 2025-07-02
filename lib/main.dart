@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'services/firestore_init_service.dart';
+import 'services/terrain/terrain_maps_updater.dart';
 import 'firebase_options.dart'; // Assurez-vous d'avoir ce fichier
 import 'constants/app_constants.dart';
 import 'models/user.dart'; // Assurez-vous que votre modèle User.dart est correct et correspond à PigeonUserDetails

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -76,27 +77,29 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
   void _showLoginDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Connexion requise'),
-        content: Text('Vous devez vous connecter pour réserver un terrain.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Annuler'),
+      builder: (context) =>
+          AlertDialog(
+            title: Text('Connexion requise'),
+            content: Text(
+                'Vous devez vous connecter pour réserver un terrain.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Navigate to login screen
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login',
+                        (route) => false,
+                  );
+                },
+                child: Text('Se connecter'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Navigate to login screen
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login',
-                (route) => false,
-              );
-            },
-            child: Text('Se connecter'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -162,110 +165,113 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
       flexibleSpace: FlexibleSpaceBar(
         background: widget.terrain.photos.isNotEmpty
             ? PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentImageIndex = index;
-                  });
-                },
-                itemCount: widget.terrain.photos.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: widget.terrain.photos[index],
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppConstants.primaryColor.withOpacity(0.1),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppConstants.primaryColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppConstants.primaryColor.withOpacity(0.1),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.image_not_supported,
-                                  size: 48,
-                                  color: Colors.grey.shade600,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Image non disponible',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentImageIndex = index;
+            });
+          },
+          itemCount: widget.terrain.photos.length,
+          itemBuilder: (context, index) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: widget.terrain.photos[index],
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) =>
+                      Container(
+                        color: AppConstants.primaryColor.withOpacity(0.1),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppConstants.primaryColor,
                             ),
                           ),
                         ),
                       ),
-                      // Gradient overlay
+                  errorWidget: (context, url, error) =>
                       Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.3),
+                        color: AppConstants.primaryColor.withOpacity(0.1),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 48,
+                                color: Colors.grey.shade600,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Image non disponible',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
-                      // Compteur d'images
-                      if (widget.terrain.photos.length > 1)
-                        Positioned(
-                          top: 40,
-                          right: 16,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${index + 1} / ${widget.terrain.photos.length}',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              )
-            : Container(
-                color: AppConstants.primaryColor.withOpacity(0.1),
-                child: Center(
-                  child: Image.asset(
-                    'assets/images/KayFoot.jpg',
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.sports_soccer,
-                        size: 80,
-                        color: AppConstants.primaryColor,
-                      );
-                    },
+                ),
+                // Gradient overlay
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.3),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+                // Compteur d'images
+                if (widget.terrain.photos.length > 1)
+                  Positioned(
+                    top: 40,
+                    right: 16,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${index + 1} / ${widget.terrain.photos.length}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        )
+            : Container(
+          color: AppConstants.primaryColor.withOpacity(0.1),
+          child: Center(
+            child: Image.asset(
+              'assets/images/KayFoot.jpg',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.sports_soccer,
+                  size: 80,
+                  color: AppConstants.primaryColor,
+                );
+              },
+            ),
+          ),
+        ),
       ),
       actions: [
         IconButton(
@@ -289,28 +295,29 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
       ],
       bottom: widget.terrain.photos.length > 1
           ? PreferredSize(
-              preferredSize: Size.fromHeight(20),
-              child: Container(
-                height: 20,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    widget.terrain.photos.length,
-                    (index) => Container(
-                      margin: EdgeInsets.symmetric(horizontal: 2),
-                      width: _currentImageIndex == index ? 8 : 6,
-                      height: _currentImageIndex == index ? 8 : 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentImageIndex == index
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.5),
-                      ),
+        preferredSize: Size.fromHeight(20),
+        child: Container(
+          height: 20,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              widget.terrain.photos.length,
+                  (index) =>
+                  Container(
+                    margin: EdgeInsets.symmetric(horizontal: 2),
+                    width: _currentImageIndex == index ? 8 : 6,
+                    height: _currentImageIndex == index ? 8 : 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentImageIndex == index
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
                     ),
                   ),
-                ),
-              ),
-            )
+            ),
+          ),
+        ),
+      )
           : null,
     );
   }
@@ -346,7 +353,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                         SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            '${widget.terrain.adresse}, ${widget.terrain.ville}',
+                            '${widget.terrain.adresse}, ${widget.terrain
+                                .ville}',
                             style: AppConstants.bodyStyle.copyWith(
                               color: Colors.grey.shade600,
                             ),
@@ -365,7 +373,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: AppConstants.primaryColor,
-                  borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
+                  borderRadius: BorderRadius.circular(
+                      AppConstants.mediumRadius),
                 ),
                 child: Text(
                   '${widget.terrain.prixHeure.toInt()} FCFA/h',
@@ -408,9 +417,10 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                       index < noteMoyenne.floor()
                           ? Icons.star
                           : index < noteMoyenne
-                              ? Icons.star_half
-                              : Icons.star_border,
-                      color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
+                          ? Icons.star_half
+                          : Icons.star_border,
+                      color: noteMoyenne > 0 ? AppConstants.accentColor : Colors
+                          .grey.shade400,
                       size: 20,
                     );
                   }),
@@ -419,8 +429,11 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 SizedBox(width: AppConstants.smallPadding),
 
                 Text(
-                  _statistiquesAvis['nombreAvis'] != null && _statistiquesAvis['nombreAvis'] > 0
-                      ? '${(_statistiquesAvis['noteMoyenne'] ?? 0.0).toStringAsFixed(1)} (${_statistiquesAvis['nombreAvis']} avis)'
+                  _statistiquesAvis['nombreAvis'] != null &&
+                      _statistiquesAvis['nombreAvis'] > 0
+                      ? '${(_statistiquesAvis['noteMoyenne'] ?? 0.0)
+                      .toStringAsFixed(
+                      1)} (${_statistiquesAvis['nombreAvis']} avis)'
                       : 'Aucun avis',
                   style: AppConstants.bodyStyle.copyWith(
                     fontWeight: FontWeight.w600,
@@ -477,7 +490,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: AppConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
+                  borderRadius: BorderRadius.circular(
+                      AppConstants.mediumRadius),
                   border: Border.all(
                     color: AppConstants.primaryColor.withOpacity(0.3),
                   ),
@@ -529,7 +543,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               final creneaux = entry.value;
 
               return Container(
-                margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
+                margin: const EdgeInsets.only(
+                    bottom: AppConstants.smallPadding),
                 padding: const EdgeInsets.all(AppConstants.mediumPadding),
                 decoration: BoxDecoration(
                   // ToDO changer la couleur !!
@@ -563,7 +578,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                               color: AppConstants.successColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppConstants.successColor.withOpacity(0.3),
+                                color: AppConstants.successColor.withOpacity(
+                                    0.3),
                               ),
                             ),
                             child: Text(
@@ -601,7 +617,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
           SizedBox(height: AppConstants.mediumPadding),
 
-          // Adresse avec icône
+          // Adresse avec icône et indicateur Google Maps
           Row(
             children: [
               Icon(
@@ -611,11 +627,55 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
               ),
               SizedBox(width: AppConstants.smallPadding),
               Expanded(
-                child: Text(
-                  '${widget.terrain.adresse}, ${widget.terrain.ville}',
-                  style: AppConstants.bodyStyle.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${widget.terrain.adresse}, ${widget.terrain.ville}',
+                      style: AppConstants.bodyStyle.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (widget.terrain.googleMapsUrl != null &&
+                        widget.terrain.googleMapsUrl!.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            color: Colors.green,
+                            size: 12,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Localisation précise disponible',
+                            style: AppConstants.bodyStyle.copyWith(
+                              fontSize: 10,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange,
+                            size: 12,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Localisation approximative',
+                            style: AppConstants.bodyStyle.copyWith(
+                              fontSize: 10,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -656,7 +716,7 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
     );
   }
 
-  /// Ouvrir la localisation dans Google Maps
+  /*/// Ouvrir la localisation dans Google Maps
   Future<void> _ouvrirDansGoogleMaps() async {
     final url = 'https://www.google.com/maps/search/?api=1&query=${widget.terrain.latitude},${widget.terrain.longitude}';
 
@@ -670,21 +730,48 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
     } catch (e) {
       _showError('Erreur lors de l\'ouverture de Maps: ${e.toString()}');
     }
-  }
+  }*/
 
   /// Obtenir l'itinéraire vers le terrain
   Future<void> _obtenirItineraire() async {
-    final url = 'https://www.google.com/maps/dir/?api=1&destination=${widget.terrain.latitude},${widget.terrain.longitude}&travelmode=driving';
-
     try {
-      final Uri uri = Uri.parse(url);
+      String directionsUrl;
+
+      print('🚗 Génération itinéraire pour: ${widget.terrain.nom}');
+      print('   GoogleMapsUrl: ${widget.terrain.googleMapsUrl}');
+      print('   Coordonnées: ${widget.terrain.latitude}, ${widget.terrain
+          .longitude}');
+
+      // Utiliser les coordonnées pour créer une URL de directions
+      // Cela garantit que l'itinéraire s'active automatiquement
+      final latitude = widget.terrain.latitude;
+      final longitude = widget.terrain.longitude;
+      directionsUrl =
+      'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=driving';
+
+      if (widget.terrain.googleMapsUrl != null &&
+          widget.terrain.googleMapsUrl!.isNotEmpty) {
+        print(
+            '   ℹ️ URL Google Maps disponible mais utilisation des coordonnées pour l\'itinéraire');
+      } else {
+        print('   ⚠️ Utilisation des coordonnées pour l\'itinéraire');
+      }
+
+      print('   🔗 URL directions finale: $directionsUrl');
+
+      final uri = Uri.parse(directionsUrl);
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('   ✅ Itinéraire ouvert avec succès');
       } else {
+        print('   ❌ Impossible de lancer l\'URL');
         _showError('Impossible d\'obtenir l\'itinéraire');
       }
     } catch (e) {
-      _showError('Erreur lors de l\'obtention de l\'itinéraire: ${e.toString()}');
+      print('❌ Erreur ouverture itinéraire: $e');
+      _showError(
+          'Erreur lors de l\'obtention de l\'itinéraire: ${e.toString()}');
     }
   }
 
@@ -728,7 +815,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.primaryColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
                 ),
               ),
             ],
@@ -745,10 +833,11 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
           // Liste des avis
           if (_avis.isEmpty)
             _buildAucunAvis()
-          else ...[
-            _buildListeAvis(),
-            if (_avis.length > 3) _buildVoirTousAvis(),
-          ],
+          else
+            ...[
+              _buildListeAvis(),
+              if (_avis.length > 3) _buildVoirTousAvis(),
+            ],
         ],
       ),
     );
@@ -775,7 +864,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
   /// Widget résumé des notes (type PlayStore)
   Widget _buildResumeNotes(int nombreAvis, double noteMoyenne) {
-    final repartition = _statistiquesAvis['repartition'] ?? {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+    final repartition = _statistiquesAvis['repartition'] ??
+        {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -803,7 +893,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(5, (index) {
                     return Icon(
-                      index < noteMoyenne.floor() ? Icons.star : Icons.star_border,
+                      index < noteMoyenne.floor() ? Icons.star : Icons
+                          .star_border,
                       color: AppConstants.primaryColor,
                       size: 20,
                     );
@@ -835,7 +926,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                     children: [
                       Text('$note', style: const TextStyle(fontSize: 12)),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star, size: 12, color: AppConstants.primaryColor),
+                      const Icon(Icons.star, size: 12, color: AppConstants
+                          .primaryColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Container(
@@ -934,38 +1026,39 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(
-                  'Tous les avis (${_avis.length})',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      builder: (context) =>
+          DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            maxChildSize: 0.9,
+            minChildSize: 0.5,
+            expand: false,
+            builder: (context, scrollController) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      'Tous les avis (${_avis.length})',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: _avis.length,
+                        itemBuilder: (context, index) {
+                          return _buildAvisCard(_avis[index]);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: _avis.length,
-                    itemBuilder: (context, index) {
-                      return _buildAvisCard(_avis[index]);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     );
   }
 
@@ -1018,7 +1111,8 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
                         Row(
                           children: List.generate(5, (index) {
                             return Icon(
-                              index < avis.note ? Icons.star : Icons.star_border,
+                              index < avis.note ? Icons.star : Icons
+                                  .star_border,
                               color: AppConstants.primaryColor,
                               size: 16,
                             );
@@ -1114,9 +1208,13 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
     final difference = now.difference(date);
 
     if (difference.inDays > 0) {
-      return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
+      return 'Il y a ${difference.inDays} jour${difference.inDays > 1
+          ? 's'
+          : ''}';
     } else if (difference.inHours > 0) {
-      return 'Il y a ${difference.inHours} heure${difference.inHours > 1 ? 's' : ''}';
+      return 'Il y a ${difference.inHours} heure${difference.inHours > 1
+          ? 's'
+          : ''}';
     } else {
       return 'Il y a quelques minutes';
     }
@@ -1124,21 +1222,37 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
 
   /*String _formatDateAvis(DateTime date) {
     return _formatDate(date);
-  }
+  }*/
 
   /// 🗺️ Ouvrir le terrain dans Google Maps
   Future<void> _ouvrirDansGoogleMaps() async {
     try {
       String mapsUrl;
 
+      print('🗺️ Ouverture Google Maps pour: ${widget.terrain.nom}');
+      print('   GoogleMapsUrl: ${widget.terrain.googleMapsUrl}');
+      print('   Coordonnées: ${widget.terrain.latitude}, ${widget.terrain
+          .longitude}');
+
       // Utiliser le lien Google Maps spécifique si disponible
-      if (widget.terrain.googleMapsUrl != null && widget.terrain.googleMapsUrl!.isNotEmpty) {
+      if (widget.terrain.googleMapsUrl != null &&
+          widget.terrain.googleMapsUrl!.isNotEmpty) {
         mapsUrl = widget.terrain.googleMapsUrl!;
+        print('   ✅ Utilisation du lien Google Maps spécifique');
       } else {
         // Fallback vers les coordonnées
         final latitude = widget.terrain.latitude;
         final longitude = widget.terrain.longitude;
-        mapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+        mapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+
+        if (kDebugMode){
+          print('   ⚠️ Fallback vers les coordonnées');
+        }
+      }
+
+      if (kDebugMode){
+        print('   🔗 URL finale: $mapsUrl');
       }
 
       final uri = Uri.parse(mapsUrl);
@@ -1148,60 +1262,19 @@ class _TerrainDetailScreenState extends State<TerrainDetailScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Impossible d\'ouvrir Google Maps')),
+            const SnackBar(content: Text('Impossible d\'ouvrir Google Maps')),
           );
         }
       }
     } catch (e) {
-      print('Erreur ouverture Google Maps: $e');
+      if (kDebugMode) {
+        print('Erreur ouverture Google Maps: $e');
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'ouverture de Maps')),
+          const SnackBar(content: Text('Erreur lors de l\'ouverture de Maps')),
         );
       }
     }
   }
-
-  /// 🚗 Obtenir l'itinéraire vers le terrain
-  Future<void> _obtenirItineraire() async {
-    try {
-      String directionsUrl;
-
-      // Utiliser le lien Google Maps spécifique si disponible
-      if (widget.terrain.googleMapsUrl != null && widget.terrain.googleMapsUrl!.isNotEmpty) {
-        // Modifier le lien pour ouvrir directement les directions
-        final originalUrl = widget.terrain.googleMapsUrl!;
-        if (originalUrl.contains('maps.app.goo.gl') || originalUrl.contains('maps.google.com')) {
-          // Pour les liens courts Google Maps, ajouter le paramètre de direction
-          directionsUrl = '$originalUrl&dirflg=d';
-        } else {
-          directionsUrl = originalUrl;
-        }
-      } else {
-        // Fallback vers les coordonnées avec directions
-        final latitude = widget.terrain.latitude;
-        final longitude = widget.terrain.longitude;
-        directionsUrl = 'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
-      }
-
-      final uri = Uri.parse(directionsUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Impossible d\'ouvrir l\'itinéraire')),
-          );
-        }
-      }
-    } catch (e) {
-      print('Erreur ouverture itinéraire: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'ouverture de l\'itinéraire')),
-        );
-      }
-    }
-  }*/
 }

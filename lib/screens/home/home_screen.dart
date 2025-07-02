@@ -21,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final List<Terrain> _featuredTerrains = [];
+  final List<TerrainWithReservationCount> _featuredTerrainsWithCount = [];
   bool _isLoading = true;
 
   // Statistiques dynamiques
@@ -38,16 +39,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadFeaturedTerrains() async {
     try {
-      final terrains = await TerrainService().getAllTerrains();
+      // Récupérer les terrains populaires basés sur le nombre de réservations
+      final terrainsPopulaires = await TerrainService().getTerrainsPopulaires(limit: 3);
       setState(() {
+        _featuredTerrainsWithCount.clear();
+        _featuredTerrainsWithCount.addAll(terrainsPopulaires);
         _featuredTerrains.clear();
-        _featuredTerrains.addAll(terrains.take(3));
+        // Extraire uniquement les objets Terrain de TerrainWithReservationCount
+        _featuredTerrains.addAll(terrainsPopulaires.map((t) => t.terrain).toList());
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      print('❌ Erreur chargement terrains populaires: $e');
+      // En cas d'erreur, fallback sur tous les terrains
+      try {
+        final terrains = await TerrainService().getAllTerrains();
+        setState(() {
+          _featuredTerrains.clear();
+          _featuredTerrains.addAll(terrains.take(3));
+          _isLoading = false;
+        });
+      } catch (e2) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -410,12 +426,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   )
                 : SizedBox(
-                    height: 200,
+                    height: 220,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: _featuredTerrains.length,
+                      itemCount: _featuredTerrainsWithCount.length,
                       itemBuilder: (context, index) {
-                        return _buildTerrainCard(_featuredTerrains[index]);
+                        return _buildTerrainCard(
+                          _featuredTerrainsWithCount[index].terrain,
+                          totalReservation: _featuredTerrainsWithCount[index].totalReservation,
+                        );
                       },
                     ),
                   ),
@@ -423,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTerrainCard(Terrain terrain) {
+  Widget _buildTerrainCard(Terrain terrain, {int? totalReservation}) {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -490,6 +509,36 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+
+                  if (totalReservation != null) ...[
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppConstants.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.event_available,
+                            size: 10,
+                            color: AppConstants.primaryColor,
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            '$totalReservation réservations',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   SizedBox(height: 4),
 

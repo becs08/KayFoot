@@ -315,6 +315,60 @@ class TerrainService {
     }
   }
 
+  /// 🏆 Récupère les terrains populaires basés sur le nombre de réservations
+  Future<List<TerrainWithReservationCount>> getTerrainsPopulaires({int limit = 3}) async {
+    try {
+      print('🏆 Récupération des terrains populaires...');
+
+      // Récupérer tous les terrains actifs
+      final allTerrains = await getAllTerrains();
+      
+      // Pour chaque terrain, compter ses réservations
+      final terrainsWithCount = <TerrainWithReservationCount>[];
+      
+      for (final terrain in allTerrains) {
+        final reservationCount = await _getReservationCountForTerrain(terrain.id);
+        terrainsWithCount.add(TerrainWithReservationCount(
+          terrain: terrain,
+          totalReservation: reservationCount,
+        ));
+      }
+
+      // Trier par nombre de réservations (décroissant)
+      terrainsWithCount.sort((a, b) => b.totalReservation.compareTo(a.totalReservation));
+
+      // Prendre les N premiers terrains
+      final result = terrainsWithCount.take(limit).toList();
+
+      print('🏆 Top $limit terrains populaires:');
+      for (var i = 0; i < result.length; i++) {
+        print('  ${i + 1}. ${result[i].terrain.nom} - ${result[i].totalReservation} réservations');
+      }
+
+      return result;
+    } catch (e) {
+      print('❌ Erreur getTerrainsPopulaires: $e');
+      rethrow;
+    }
+  }
+
+  /// 📊 Compte le nombre de réservations pour un terrain
+  Future<int> _getReservationCountForTerrain(String terrainId) async {
+    try {
+      final query = await _firestore
+          .collection('reservations')
+          .where('terrainId', isEqualTo: terrainId)
+          .where('statut', whereIn: ['payee', 'terminee']) // Seulement les réservations confirmées
+          .count()
+          .get();
+
+      return query.count ?? 0;
+    } catch (e) {
+      print('❌ Erreur _getReservationCountForTerrain: $e');
+      return 0;
+    }
+  }
+
   /// 🗑️ Supprime (désactive) un terrain
   Future<TerrainResult> deleteTerrain(String terrainId) async {
     try {
@@ -457,5 +511,16 @@ class TerrainWithDistance {
     required this.terrain,
     this.distance,
     required this.distanceFormatted,
+  });
+}
+
+// 🏆 Classe pour représenter un terrain avec son nombre de réservations
+class TerrainWithReservationCount {
+  final Terrain terrain;
+  final int totalReservation;
+
+  TerrainWithReservationCount({
+    required this.terrain,
+    required this.totalReservation,
   });
 }

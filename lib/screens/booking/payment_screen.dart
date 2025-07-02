@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter/services.dart';
 import '../../constants/app_constants.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
+import '../../services/reservation/pdf_receipt_service.dart';
+import '../../services/reservation/receipt_download_service.dart';
 import '../home/home_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -25,15 +28,24 @@ class _PaymentScreenState extends State<PaymentScreen>
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Services pour la gestion des reçus
+  final PdfReceiptService _receiptService = PdfReceiptService();
+  final ReceiptDownloadService _downloadService = ReceiptDownloadService();
+
+  // États pour les actions de téléchargement/partage
+  bool _isDownloading = false;
+  bool _isSharing = false;
+  bool _isCopying = false;
+
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -41,7 +53,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       parent: _animationController,
       curve: Curves.elasticOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: Offset(0, 0.5),
       end: Offset.zero,
@@ -49,7 +61,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       parent: _animationController,
       curve: Curves.easeOut,
     ));
-    
+
     _animationController.forward();
   }
 
@@ -66,10 +78,209 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
-  void _shareReceipt() {
-    // TODO: Implémenter le partage du reçu
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Fonctionnalité de partage à venir')),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppConstants.errorColor,
+      ),
+    );
+  }
+
+  Future<void> _downloadReceipt() async {
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      final filePath = await _downloadService.downloadReceiptPDF(
+        reservation: widget.reservation,
+        terrain: widget.terrain,
+      );
+
+      if (filePath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Reçu PDF téléchargé avec succès'),
+            backgroundColor: AppConstants.successColor,
+            action: filePath.contains('navigateur') ? null : SnackBarAction(
+              label: 'Voir',
+              onPressed: () {
+                // Optionnel: ouvrir le fichier
+              },
+            ),
+          ),
+        );
+      } else {
+        _showError('Erreur lors du téléchargement du reçu PDF');
+      }
+    } catch (e) {
+      _showError('Erreur lors du téléchargement du reçu PDF');
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+    }
+  }
+
+  Future<void> _shareReceipt() async {
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final success = await _downloadService.shareReceiptPDF(
+        reservation: widget.reservation,
+        terrain: widget.terrain,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reçu PDF partagé avec succès'),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors du partage du reçu PDF');
+      }
+    } catch (e) {
+      _showError('Erreur lors du partage du reçu PDF');
+    } finally {
+      setState(() {
+        _isSharing = false;
+      });
+    }
+  }
+
+  Future<void> _copyReservationDetails() async {
+    setState(() {
+      _isCopying = true;
+    });
+
+    try {
+      final success = await _downloadService.copyReservationDetails(
+        reservation: widget.reservation,
+        terrain: widget.terrain,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.copy, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Détails copiés dans le presse-papiers'),
+              ],
+            ),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors de la copie des détails');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la copie des détails');
+    } finally {
+      setState(() {
+        _isCopying = false;
+      });
+    }
+  }
+
+  Future<void> _shareReservationDetails() async {
+    try {
+      final success = await _downloadService.shareReservationDetails(
+        reservation: widget.reservation,
+        terrain: widget.terrain,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.text_fields, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Détails complets copiés'),
+              ],
+            ),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors de la copie des détails');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la copie des détails');
+    }
+  }
+
+  void _showReceiptOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Options de reçu',
+                style: AppConstants.subHeadingStyle.copyWith(fontSize: 18),
+              ),
+              SizedBox(height: AppConstants.mediumPadding),
+
+              // Télécharger PDF
+              ListTile(
+                leading: Icon(Icons.download, color: AppConstants.primaryColor),
+                title: Text('Télécharger PDF'),
+                subtitle: Text('Sauvegarder le reçu sur votre appareil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _downloadReceipt();
+                },
+              ),
+
+              // Partager PDF
+              ListTile(
+                leading: Icon(Icons.share, color: AppConstants.primaryColor),
+                title: Text('Partager PDF'),
+                subtitle: Text('Partager le reçu PDF via vos applications'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareReceipt();
+                },
+              ),
+
+              // Copier détails
+              ListTile(
+                leading: Icon(Icons.copy, color: AppConstants.primaryColor),
+                title: Text('Copier les détails'),
+                subtitle: Text('Copier les informations dans le presse-papiers'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyReservationDetails();
+                },
+              ),
+
+              // Copier détails complets
+              ListTile(
+                leading: Icon(Icons.text_fields, color: AppConstants.primaryColor),
+                title: Text('Copier le format complet'),
+                subtitle: Text('Copier tous les détails sous forme de texte'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareReservationDetails();
+                },
+              ),
+
+              SizedBox(height: AppConstants.smallPadding),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -80,7 +291,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       appBar: AppBar(
         title: Text('Paiement confirmé'),
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.green,
         elevation: 0,
         actions: [
           IconButton(
@@ -110,9 +321,9 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ),
             ),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             Text(
               'Réservation confirmée !',
               style: AppConstants.headingStyle.copyWith(
@@ -121,9 +332,9 @@ class _PaymentScreenState extends State<PaymentScreen>
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             SizedBox(height: AppConstants.smallPadding),
-            
+
             Text(
               'Votre paiement a été traité avec succès',
               style: AppConstants.bodyStyle.copyWith(
@@ -131,22 +342,22 @@ class _PaymentScreenState extends State<PaymentScreen>
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             // Reçu de réservation
             SlideTransition(
               position: _slideAnimation,
               child: _buildReceipt(),
             ),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             // QR Code
             _buildQRCode(),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             // Boutons d'action
             _buildActionButtons(),
           ],
@@ -177,9 +388,9 @@ class _PaymentScreenState extends State<PaymentScreen>
                       color: AppConstants.primaryColor,
                     ),
                   ),
-                  
+
                   SizedBox(height: AppConstants.smallPadding),
-                  
+
                   Text(
                     'N° ${widget.reservation.id}',
                     style: AppConstants.bodyStyle.copyWith(
@@ -190,38 +401,38 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ],
               ),
             ),
-            
+
             SizedBox(height: AppConstants.largePadding),
-            
+
             Divider(),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Détails de la réservation
             _buildReceiptRow('Terrain', widget.terrain.nom),
             _buildReceiptRow('Adresse', '${widget.terrain.adresse}, ${widget.terrain.ville}'),
             _buildReceiptRow('Date', _formatDate(widget.reservation.date)),
             _buildReceiptRow('Créneau', '${widget.reservation.heureDebut} - ${widget.reservation.heureFin}'),
             _buildReceiptRow('Durée', '1 heure'),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             Divider(),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Détails du paiement
             _buildReceiptRow('Mode de paiement', _getPaymentMethodName(widget.reservation.modePaiement)),
             if (widget.reservation.transactionId != null)
               _buildReceiptRow('ID Transaction', widget.reservation.transactionId!),
             _buildReceiptRow('Date de paiement', _formatDateTime(widget.reservation.dateCreation)),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             Divider(),
-            
+
             SizedBox(height: AppConstants.mediumPadding),
-            
+
             // Total
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -242,12 +453,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ],
             ),
-            
-            SizedBox(height: AppConstants.largePadding),
-            
+
+            const SizedBox(height: AppConstants.largePadding),
+
             // Note importante
             Container(
-              padding: EdgeInsets.all(AppConstants.mediumPadding),
+              padding: const EdgeInsets.all(AppConstants.mediumPadding),
               decoration: BoxDecoration(
                 color: AppConstants.accentColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -258,7 +469,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.info,
                     color: AppConstants.accentColor,
                     size: 20,
@@ -276,6 +487,42 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ],
               ),
             ),
+
+            const SizedBox(height: AppConstants.mediumPadding),
+
+            // Indicateur d'action disponible
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.mediumPadding,
+                vertical: AppConstants.smallPadding,
+              ),
+              decoration: BoxDecoration(
+                color: AppConstants.successColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppConstants.smallRadius),
+                border: Border.all(
+                  color: AppConstants.successColor.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.receipt_long,
+                    color: AppConstants.successColor,
+                    size: 16,
+                  ),
+                  //SizedBox(width: AppConstants.smallPadding),
+                  Text(
+                    'Téléchargez ou partagez votre reçu ci-dessous',
+                    style: AppConstants.bodyStyle.copyWith(
+                      fontSize: 10,
+                      color: AppConstants.successColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -284,7 +531,7 @@ class _PaymentScreenState extends State<PaymentScreen>
 
   Widget _buildReceiptRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -319,18 +566,18 @@ class _PaymentScreenState extends State<PaymentScreen>
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
       ),
       child: Padding(
-        padding: EdgeInsets.all(AppConstants.largePadding),
+        padding: const EdgeInsets.all(AppConstants.largePadding),
         child: Column(
           children: [
             Text(
               'QR Code de réservation',
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
-            
-            SizedBox(height: AppConstants.mediumPadding),
-            
+
+            const SizedBox(height: AppConstants.mediumPadding),
+
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -344,9 +591,9 @@ class _PaymentScreenState extends State<PaymentScreen>
                 backgroundColor: Colors.white,
               ),
             ),
-            
-            SizedBox(height: AppConstants.mediumPadding),
-            
+
+            const SizedBox(height: AppConstants.mediumPadding),
+
             Text(
               'Code: ${widget.reservation.qrCode}',
               style: AppConstants.bodyStyle.copyWith(
@@ -364,51 +611,60 @@ class _PaymentScreenState extends State<PaymentScreen>
   Widget _buildActionButtons() {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton.icon(
-            onPressed: _navigateToHome,
-            icon: Icon(Icons.home),
-            label: Text(
-              'Retour à l\'accueil',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-        
-        SizedBox(height: AppConstants.mediumPadding),
-        
+
+        // Boutons d'action rapide
         Row(
           children: [
+            // Partage rapide
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _shareReceipt,
-                icon: Icon(Icons.share),
-                label: Text('Partager'),
+                onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _shareReceipt,
+                icon: _isSharing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                        ),
+                      )
+                    : const Icon(Icons.share, size: 18),
+                label: Text(
+                  _isSharing ? 'Partage...' : 'Partager',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ),
-            
-            SizedBox(width: AppConstants.mediumPadding),
-            
+
+            const SizedBox(width: AppConstants.smallPadding),
+
+            // Téléchargement rapide
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Télécharger le reçu en PDF
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Téléchargement à venir')),
-                  );
-                },
-                icon: Icon(Icons.download),
-                label: Text('Télécharger'),
+                onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _downloadReceipt,
+                icon: _isDownloading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                        ),
+                      )
+                    : const Icon(Icons.download, size: 18),
+                label: Text(
+                  _isDownloading ? 'Téléch...' : 'Télécharger',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ),
           ],
         ),
-        
-        SizedBox(height: AppConstants.mediumPadding),
-        
-        TextButton(
+
+        const SizedBox(height: AppConstants.mediumPadding),
+
+        // Lien vers les réservations
+        TextButton.icon(
           onPressed: () {
             Navigator.of(context).pushNamedAndRemoveUntil(
               '/home',
@@ -416,8 +672,26 @@ class _PaymentScreenState extends State<PaymentScreen>
             );
             // TODO: Naviguer vers l'écran de mes réservations
           },
-          child: Text('Voir mes réservations'),
+          icon: const Icon(Icons.list_alt, size: 16),
+          label: const Text('Voir mes réservations'),
         ),
+
+        const SizedBox(height: AppConstants.mediumPadding),
+
+        // Bouton principal de retour à l'accueil
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: _navigateToHome,
+            icon: const Icon(Icons.home),
+            label: const Text(
+              'Retour à l\'accueil',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+
       ],
     );
   }
@@ -427,15 +701,15 @@ class _PaymentScreenState extends State<PaymentScreen>
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
       'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
     ];
-    
+
     const days = [
-      'lundi', 'mardi', 'mercredi', 'jeudi', 
+      'lundi', 'mardi', 'mercredi', 'jeudi',
       'vendredi', 'samedi', 'dimanche'
     ];
-    
+
     final dayName = days[date.weekday - 1];
     final monthName = months[date.month - 1];
-    
+
     return '${dayName.substring(0, 1).toUpperCase()}${dayName.substring(1)} ${date.day} $monthName ${date.year}';
   }
 

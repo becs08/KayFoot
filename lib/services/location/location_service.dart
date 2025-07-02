@@ -39,7 +39,7 @@ class LocationService {
       // Obtenir la position
       _currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 10),
       );
 
       _isLocationPermissionGranted = true;

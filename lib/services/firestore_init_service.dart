@@ -25,6 +25,9 @@ class FirestoreInitService {
           print('✅ Avis existants préservés');
         }
 
+        // Mettre à jour les terrains existants avec les liens Google Maps
+        await _updateTerrainsWithGoogleMapsLinks();
+
         
         await _showIndexInstructions(); // Toujours afficher les instructions index
         return;
@@ -412,6 +415,47 @@ class FirestoreInitService {
     ];
 
     return comments[index % comments.length];
+  }
+
+  /// 🗺️ Mettre à jour les terrains existants avec les liens Google Maps
+  static Future<void> _updateTerrainsWithGoogleMapsLinks() async {
+    try {
+      print('🗺️ Mise à jour des terrains avec les liens Google Maps...');
+      
+      // Mapping des noms de terrains vers les liens Google Maps
+      final Map<String, String> terrainMapsLinks = {
+        'Terrain Excellence Dakar': 'https://maps.app.goo.gl/G25Ehcy5rZ5NtCQL8',
+        'Stade Municipal Thiès': 'https://maps.app.goo.gl/8X4pQrKzNvU3mYeZ8',
+        'Arena Saint-Louis': 'https://maps.app.goo.gl/DvTuKRp8VKqzm4Fy9',
+        'Complex Sportif Kaolack': 'https://maps.app.goo.gl/7H9mRqzY3QjKtVgA8',
+      };
+      
+      final terrainsSnapshot = await _firestore.collection('terrains').get();
+      int terrainsUpdated = 0;
+      
+      for (final terrainDoc in terrainsSnapshot.docs) {
+        final data = terrainDoc.data();
+        final nom = data['nom'] as String?;
+        
+        if (nom != null && terrainMapsLinks.containsKey(nom)) {
+          // Vérifier si le champ googleMapsUrl existe déjà
+          if (!data.containsKey('googleMapsUrl') || data['googleMapsUrl'] == null) {
+            await terrainDoc.reference.update({
+              'googleMapsUrl': terrainMapsLinks[nom],
+            });
+            
+            print('✅ Terrain "$nom" mis à jour avec le lien Google Maps');
+            terrainsUpdated++;
+          } else {
+            print('ℹ️ Terrain "$nom" a déjà un lien Google Maps');
+          }
+        }
+      }
+      
+      print('🎉 Mise à jour terminée: $terrainsUpdated terrain(s) mis à jour');
+    } catch (e) {
+      print('❌ Erreur lors de la mise à jour des liens Google Maps: $e');
+    }
   }
 
   /// 🔄 Migrer les anciens champs statistiques

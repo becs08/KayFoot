@@ -1,41 +1,260 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:printing/printing.dart';
+// Package share_plus à ajouter au pubspec.yaml si nécessaire
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../constants/app_constants.dart';
+import 'pdf_receipt_service.dart';
 
-class PdfReceiptService {
-  static final PdfReceiptService _instance = PdfReceiptService._internal();
-  factory PdfReceiptService() => _instance;
-  PdfReceiptService._internal();
+class ReceiptDownloadService {
+  static final ReceiptDownloadService _instance = ReceiptDownloadService._internal();
+  factory ReceiptDownloadService() => _instance;
+  ReceiptDownloadService._internal();
 
-  /// Génère et partage le reçu PDF
+  final PdfReceiptService _pdfService = PdfReceiptService();
+
+  /// Partage le reçu PDF via le système de partage natif
   Future<bool> shareReceiptPDF({
     required Reservation reservation,
     required Terrain terrain,
   }) async {
     try {
-      // Générer le PDF
-      final pdf = _generateReceiptPDF(reservation, terrain);
-      final pdfBytes = await pdf.save();
-
-      // Utiliser le système de partage natif
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename: 'Recu_${reservation.id}.pdf',
+      return await _pdfService.shareReceiptPDF(
+        reservation: reservation,
+        terrain: terrain,
       );
-
-      return true;
     } catch (e) {
-      print('❌ Erreur génération reçu PDF: $e');
+      print('❌ Erreur partage reçu PDF: $e');
       return false;
     }
   }
 
-  /// Génère le PDF du reçu
+  /// Télécharge et sauvegarde le reçu PDF localement
+  Future<String?> downloadReceiptPDF({
+    required Reservation reservation,
+    required Terrain terrain,
+  }) async {
+    try {
+      // Demander les permissions si nécessaire
+      if (!kIsWeb && Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          throw Exception('Permission de stockage refusée');
+        }
+      }
+
+      // Utiliser le service PDF pour générer le document
+      // Nous créons une méthode temporaire pour générer le PDF ici
+      final pdf = _generateReceiptPDF(reservation, terrain);
+      final pdfBytes = await pdf.save();
+
+      // Définir le chemin de sauvegarde
+      String? filePath;
+      if (kIsWeb) {
+        // Pour le web, utiliser le système de téléchargement du navigateur
+        await Printing.layoutPdf(
+          onLayout: (format) async => pdfBytes,
+          name: 'Recu_${reservation.id}.pdf',
+        );
+        return 'Fichier téléchargé via le navigateur';
+      } else {
+        // Pour mobile, sauvegarder dans le dossier Documents
+        final directory = await getApplicationDocumentsDirectory();
+        final fileName = 'Recu_${reservation.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        final file = File('${directory.path}/$fileName');
+        
+        await file.writeAsBytes(pdfBytes);
+        filePath = file.path;
+      }
+
+      return filePath;
+    } catch (e) {
+      print('❌ Erreur téléchargement reçu PDF: $e');
+      return null;
+    }
+  }
+
+  /// Copie les détails de la réservation dans le presse-papiers
+  Future<bool> copyReservationDetails({
+    required Reservation reservation,
+    required Terrain terrain,
+  }) async {
+    try {
+      final details = _formatReservationDetails(reservation, terrain);
+      await Clipboard.setData(ClipboardData(text: details));
+      return true;
+    } catch (e) {
+      print('❌ Erreur copie détails réservation: $e');
+      return false;
+    }
+  }
+
+  /// Partage les détails de la réservation sous forme de texte
+  Future<bool> shareReservationDetails({
+    required Reservation reservation,
+    required Terrain terrain,
+  }) async {
+    try {
+      final details = _formatReservationDetails(reservation, terrain);
+      // Pour l'instant, nous copions dans le presse-papiers
+      // Le package share_plus peut être ajouté plus tard pour un vrai partage
+      await Clipboard.setData(ClipboardData(text: details));
+      return true;
+    } catch (e) {
+      print('❌ Erreur partage détails réservation: $e');
+      return false;
+    }
+  }
+
+  /// Formate les détails de la réservation pour le partage/copie
+  String _formatReservationDetails(Reservation reservation, Terrain terrain) {
+    final buffer = StringBuffer();
+    
+    buffer.writeln('🏟️ DÉTAILS DE RÉSERVATION - KAYFOOT');
+    buffer.writeln('═══════════════════════════════════');
+    buffer.writeln();
+    
+    // Informations générales
+    buffer.writeln('📄 N° de réservation: ${reservation.id}');
+    buffer.writeln('📅 Date: ${_formatDate(reservation.date)}');
+    buffer.writeln('⏰ Créneau: ${reservation.heureDebut} - ${reservation.heureFin}');
+    buffer.writeln('⏱️ Durée: ${_calculateDuration(reservation)}');
+    buffer.writeln('📊 Statut: ${_getStatusText(reservation.statut)}');
+    buffer.writeln();
+    
+    // Terrain
+    buffer.writeln('🏟️ TERRAIN');
+    buffer.writeln('Nom: ${terrain.nom}');
+    buffer.writeln('Adresse: ${terrain.adresse}, ${terrain.ville}');
+    buffer.writeln('Prix: ${terrain.prixHeure.toInt()} FCFA/heure');
+    buffer.writeln();
+    
+    // Paiement
+    buffer.writeln('💳 PAIEMENT');
+    buffer.writeln('Montant: ${reservation.montant.toInt()} FCFA');
+    buffer.writeln('Mode: ${_getPaymentMethodName(reservation.modePaiement)}');
+    if (reservation.transactionId != null) {
+      buffer.writeln('Transaction: ${reservation.transactionId}');
+    }
+    buffer.writeln();
+    
+    // QR Code si applicable
+    if (reservation.statut == StatutReservation.payee || 
+        reservation.statut == StatutReservation.confirmee) {
+      buffer.writeln('🔐 CODE D\'ACCÈS');
+      buffer.writeln('QR Code: ${reservation.qrCode}');
+      buffer.writeln();
+    }
+    
+    // Informations supplémentaires
+    buffer.writeln('📋 INFORMATIONS SUPPLÉMENTAIRES');
+    buffer.writeln('Réservé le: ${_formatDateTime(reservation.dateCreation)}');
+    if (reservation.dateAnnulation != null) {
+      buffer.writeln('Annulé le: ${_formatDateTime(reservation.dateAnnulation!)}');
+    }
+    buffer.writeln();
+    
+    buffer.writeln('─────────────────────────────────');
+    buffer.writeln('Merci d\'avoir choisi KayFoot ! 🏆');
+    buffer.writeln('Pour toute question, contactez-nous.');
+    
+    return buffer.toString();
+  }
+
+  /// Calcule la durée de la réservation
+  String _calculateDuration(Reservation reservation) {
+    try {
+      final heureDebut = reservation.heureDebut;
+      final heureFin = reservation.heureFin;
+
+      final debutParts = heureDebut.split(':');
+      final finParts = heureFin.split(':');
+
+      final debutHeure = int.parse(debutParts[0]);
+      final debutMinute = int.parse(debutParts[1]);
+      final finHeure = int.parse(finParts[0]);
+      final finMinute = int.parse(finParts[1]);
+
+      final debutTotalMinutes = debutHeure * 60 + debutMinute;
+      final finTotalMinutes = finHeure * 60 + finMinute;
+      final dureeMinutes = finTotalMinutes - debutTotalMinutes;
+
+      if (dureeMinutes < 60) {
+        return '$dureeMinutes minutes';
+      } else {
+        final heures = dureeMinutes ~/ 60;
+        final minutes = dureeMinutes % 60;
+
+        if (minutes == 0) {
+          return heures == 1 ? '1 heure' : '$heures heures';
+        } else {
+          return heures == 1
+              ? '1h${minutes.toString().padLeft(2, '0')}'
+              : '${heures}h${minutes.toString().padLeft(2, '0')}';
+        }
+      }
+    } catch (e) {
+      return '1 heure';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+
+    const days = [
+      'lundi', 'mardi', 'mercredi', 'jeudi',
+      'vendredi', 'samedi', 'dimanche'
+    ];
+
+    final dayName = days[date.weekday - 1];
+    final monthName = months[date.month - 1];
+
+    return '${dayName.substring(0, 1).toUpperCase()}${dayName.substring(1)} ${date.day} $monthName ${date.year}';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _getStatusText(StatutReservation statut) {
+    switch (statut) {
+      case StatutReservation.enAttente:
+        return 'En attente';
+      case StatutReservation.confirmee:
+        return 'Confirmée';
+      case StatutReservation.payee:
+        return 'Payée';
+      case StatutReservation.annulee:
+        return 'Annulée';
+      case StatutReservation.terminee:
+        return 'Terminée';
+    }
+  }
+
+  String _getPaymentMethodName(ModePaiement method) {
+    switch (method) {
+      case ModePaiement.orange:
+        return 'Orange Money';
+      case ModePaiement.wave:
+        return 'Wave';
+      case ModePaiement.free:
+        return 'Free Money';
+      case ModePaiement.especes:
+        return 'Espèces';
+    }
+  }
+
+  /// Génère le PDF du reçu (copie de la méthode du PdfReceiptService)
   pw.Document _generateReceiptPDF(Reservation reservation, Terrain terrain) {
     final pdf = pw.Document();
 
@@ -157,7 +376,7 @@ class PdfReceiptService {
               style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey600),
             ),
             pw.Text(
-              _formatDate(DateTime.now()),
+              _formatDatePDF(DateTime.now()),
               style: pw.TextStyle(font: fontBold, fontSize: 12),
             ),
             pw.SizedBox(height: 10),
@@ -277,10 +496,10 @@ class PdfReceiptService {
           pw.Row(
             children: [
               pw.Expanded(
-                child: _buildDetailRow('Date:', _formatDate(reservation.date), font: font, fontBold: fontBold),
+                child: _buildDetailRowPDF('Date:', _formatDatePDF(reservation.date), font: font, fontBold: fontBold),
               ),
               pw.Expanded(
-                child: _buildDetailRow('Créneau:', '${reservation.heureDebut} - ${reservation.heureFin}', font: font, fontBold: fontBold),
+                child: _buildDetailRowPDF('Créneau:', '${reservation.heureDebut} - ${reservation.heureFin}', font: font, fontBold: fontBold),
               ),
             ],
           ),
@@ -288,10 +507,10 @@ class PdfReceiptService {
           pw.Row(
             children: [
               pw.Expanded(
-                child: _buildDetailRow('Durée:', _calculateDuration(reservation), font: font, fontBold: fontBold),
+                child: _buildDetailRowPDF('Durée:', _calculateDuration(reservation), font: font, fontBold: fontBold),
               ),
               pw.Expanded(
-                child: _buildDetailRow('Réservé le:', _formatDate(reservation.dateCreation), font: font, fontBold: fontBold),
+                child: _buildDetailRowPDF('Réservé le:', _formatDatePDF(reservation.dateCreation), font: font, fontBold: fontBold),
               ),
             ],
           ),
@@ -300,8 +519,8 @@ class PdfReceiptService {
     );
   }
 
-  /// Ligne de détail
-  pw.Widget _buildDetailRow(String label, String value, {required pw.Font font, required pw.Font fontBold}) {
+  /// Ligne de détail PDF
+  pw.Widget _buildDetailRowPDF(String label, String value, {required pw.Font font, required pw.Font fontBold}) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -453,68 +672,12 @@ class PdfReceiptService {
     );
   }
 
-  /// Calcule la durée de la réservation
-  String _calculateDuration(Reservation reservation) {
-    try {
-      final heureDebut = reservation.heureDebut;
-      final heureFin = reservation.heureFin;
-
-      // Parser les heures (format "HH:mm")
-      final debutParts = heureDebut.split(':');
-      final finParts = heureFin.split(':');
-
-      final debutHeure = int.parse(debutParts[0]);
-      final debutMinute = int.parse(debutParts[1]);
-      final finHeure = int.parse(finParts[0]);
-      final finMinute = int.parse(finParts[1]);
-
-      // Convertir en minutes depuis minuit
-      final debutTotalMinutes = debutHeure * 60 + debutMinute;
-      final finTotalMinutes = finHeure * 60 + finMinute;
-
-      // Calculer la différence
-      final dureeMinutes = finTotalMinutes - debutTotalMinutes;
-
-      // Convertir en format lisible
-      if (dureeMinutes < 60) {
-        return '$dureeMinutes minutes';
-      } else {
-        final heures = dureeMinutes ~/ 60;
-        final minutes = dureeMinutes % 60;
-
-        if (minutes == 0) {
-          return heures == 1 ? '1 heure' : '$heures heures';
-        } else {
-          return heures == 1
-              ? '1h${minutes.toString().padLeft(2, '0')}'
-              : '${heures}h${minutes.toString().padLeft(2, '0')}';
-        }
-      }
-    } catch (e) {
-      return '1 heure'; // Valeur par défaut
-    }
-  }
-
-  /// Formate une date
-  String _formatDate(DateTime date) {
+  /// Formate une date pour PDF
+  String _formatDatePDF(DateTime date) {
     const months = [
       'jan', 'fév', 'mar', 'avr', 'mai', 'jun',
       'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  /// Nom du mode de paiement
-  String _getPaymentMethodName(ModePaiement method) {
-    switch (method) {
-      case ModePaiement.orange:
-        return 'Orange Money';
-      case ModePaiement.wave:
-        return 'Wave';
-      case ModePaiement.free:
-        return 'Free Money';
-      case ModePaiement.especes:
-        return 'Espèces';
-    }
   }
 }

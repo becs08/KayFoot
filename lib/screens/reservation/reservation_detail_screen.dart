@@ -9,11 +9,13 @@ import '../../services/terrain/terrain_image_service.dart';
 import '../../services/reservation/reservation_service.dart';
 import '../../services/profil/statistics_service.dart';
 import '../../services/reservation/pdf_receipt_service.dart';
+import '../../services/reservation/receipt_download_service.dart';
+import 'package:flutter/services.dart';
 
 class ReservationDetailScreen extends StatefulWidget {
   final Reservation reservation;
 
-  const ReservationDetailScreen({Key? key, required this.reservation}) : super(key: key);
+  const ReservationDetailScreen({super.key, required this.reservation});
 
   @override
   _ReservationDetailScreenState createState() => _ReservationDetailScreenState();
@@ -23,9 +25,12 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
   Terrain? _terrain;
   bool _isLoading = true;
   bool _isDownloading = false;
+  bool _isSharing = false;
+  bool _isCopying = false;
   final StatisticsService _statsService = StatisticsService();
   final TerrainImageService _imageService = TerrainImageService();
   final PdfReceiptService _receiptService = PdfReceiptService();
+  final ReceiptDownloadService _downloadService = ReceiptDownloadService();
 
   @override
   void initState() {
@@ -51,8 +56,8 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Annuler la réservation'),
-        content: Column(
+        title: const Text('Annuler la réservation'),
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -70,14 +75,14 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Non'),
+            child: const Text('Non'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Oui, annuler'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.errorColor,
             ),
+            child: const Text('Oui, annuler'),
           ),
         ],
       ),
@@ -148,6 +153,182 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
     }
   }
 
+
+  Future<void> _shareReceipt() async {
+    if (_terrain == null) {
+      _showError('Informations du terrain non disponibles');
+      return;
+    }
+
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final success = await _downloadService.shareReceiptPDF(
+        reservation: widget.reservation,
+        terrain: _terrain!,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reçu PDF partagé avec succès'),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors du partage du reçu PDF');
+      }
+    } catch (e) {
+      _showError('Erreur lors du partage du reçu PDF');
+    } finally {
+      setState(() {
+        _isSharing = false;
+      });
+    }
+  }
+
+  Future<void> _copyReservationDetails() async {
+    if (_terrain == null) {
+      _showError('Informations du terrain non disponibles');
+      return;
+    }
+
+    setState(() {
+      _isCopying = true;
+    });
+
+    try {
+      final success = await _downloadService.copyReservationDetails(
+        reservation: widget.reservation,
+        terrain: _terrain!,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.copy, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Détails copiés dans le presse-papiers'),
+              ],
+            ),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors de la copie des détails');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la copie des détails');
+    } finally {
+      setState(() {
+        _isCopying = false;
+      });
+    }
+  }
+
+  Future<void> _shareReservationDetails() async {
+    if (_terrain == null) {
+      _showError('Informations du terrain non disponibles');
+      return;
+    }
+
+    try {
+      final success = await _downloadService.shareReservationDetails(
+        reservation: widget.reservation,
+        terrain: _terrain!,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.text_fields, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Détails complets copiés'),
+              ],
+            ),
+            backgroundColor: AppConstants.successColor,
+          ),
+        );
+      } else {
+        _showError('Erreur lors de la copie des détails');
+      }
+    } catch (e) {
+      _showError('Erreur lors de la copie des détails');
+    }
+  }
+
+  void _showReceiptOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Options de reçu',
+                style: AppConstants.subHeadingStyle.copyWith(fontSize: 18),
+              ),
+              SizedBox(height: AppConstants.mediumPadding),
+
+              // Télécharger PDF
+              ListTile(
+                leading: Icon(Icons.download, color: AppConstants.primaryColor),
+                title: Text('Télécharger PDF'),
+                subtitle: Text('Sauvegarder le reçu sur votre appareil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _downloadReceipt();
+                },
+              ),
+
+              // Partager PDF
+              ListTile(
+                leading: Icon(Icons.share, color: AppConstants.primaryColor),
+                title: Text('Partager PDF'),
+                subtitle: Text('Partager le reçu PDF via vos applications'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareReceipt();
+                },
+              ),
+
+              // Copier détails
+              ListTile(
+                leading: Icon(Icons.copy, color: AppConstants.primaryColor),
+                title: Text('Copier les détails'),
+                subtitle: Text('Copier les informations dans le presse-papiers'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyReservationDetails();
+                },
+              ),
+
+              // Copier détails complets
+              ListTile(
+                leading: Icon(Icons.text_fields, color: AppConstants.primaryColor),
+                title: Text('Copier le format complet'),
+                subtitle: Text('Copier tous les détails sous forme de texte'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareReservationDetails();
+                },
+              ),
+
+              SizedBox(height: AppConstants.smallPadding),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   bool _canCancelReservation() {
     if (widget.reservation.statut != StatutReservation.payee) {
@@ -633,15 +814,16 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             ),
           ),
 
-        if (canCancel) SizedBox(height: AppConstants.smallPadding),
+        if (canCancel) SizedBox(height: AppConstants.mediumPadding),
 
-        // Bouton de partage uniquement pour les réservations actives
-        if (isActiveReservation)
+        // Boutons de reçu pour les réservations actives
+        if (isActiveReservation) ...[
+          // Bouton principal de téléchargement/partage
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _isDownloading ? null : _downloadReceipt,
-              icon: _isDownloading
+              onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _showReceiptOptions,
+              icon: (_isDownloading || _isSharing || _isCopying)
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -650,13 +832,102 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.share),
-              label: Text(_isDownloading ? 'Génération...' : 'Partager le reçu'),
+                  : const Icon(Icons.receipt_long),
+              label: Text(
+                _isDownloading ? 'Téléchargement...' :
+                _isSharing ? 'Partage...' :
+                _isCopying ? 'Copie...' :
+                'Options de reçu'
+              ),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
+
+          SizedBox(height: AppConstants.smallPadding),
+
+          // Boutons d'action rapide
+          Row(
+            children: [
+              // Téléchargement rapide
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _downloadReceipt,
+                  icon: _isDownloading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                          ),
+                        )
+                      : const Icon(Icons.download, size: 18),
+                  label: Text(
+                    _isDownloading ? 'Téléch...' : 'Télécharger',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+
+              SizedBox(width: AppConstants.smallPadding),
+
+              // Partage rapide
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _shareReceipt,
+                  icon: _isSharing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                          ),
+                        )
+                      : const Icon(Icons.share, size: 18),
+                  label: Text(
+                    _isSharing ? 'Partage...' : 'Partager',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+
+              SizedBox(width: AppConstants.smallPadding),
+
+              // Copie rapide
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: (_isDownloading || _isSharing || _isCopying) ? null : _copyReservationDetails,
+                  icon: _isCopying
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                          ),
+                        )
+                      : const Icon(Icons.copy, size: 18),
+                  label: Text(
+                    _isCopying ? 'Copie...' : 'Copier',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
 
         if (!canCancel && widget.reservation.statut == StatutReservation.payee) ...[
           const SizedBox(height: AppConstants.smallPadding),
