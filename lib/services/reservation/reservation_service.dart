@@ -322,10 +322,10 @@ class ReservationService {
         int.parse(reservation.heureDebut.split(':')[1]),
       );
 
-      if (reservationDateTime.difference(now).inHours < 2) {
+      if (reservationDateTime.difference(now).inHours < 24) {
         return ReservationResult(
           success: false,
-          message: 'Impossible d\'annuler moins de 2h avant le match',
+          message: 'Impossible d\'annuler moins de 24h avant le match',
         );
       }
 

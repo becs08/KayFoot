@@ -5,7 +5,6 @@ import '../../constants/app_constants.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../services/reservation/pdf_receipt_service.dart';
-import '../../services/reservation/receipt_download_service.dart';
 import '../home/home_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -28,9 +27,8 @@ class _PaymentScreenState extends State<PaymentScreen>
   late Animation<double> _scaleAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Services pour la gestion des reçus
+  // Service pour la gestion des reçus
   final PdfReceiptService _receiptService = PdfReceiptService();
-  final ReceiptDownloadService _downloadService = ReceiptDownloadService();
 
   // États pour les actions de téléchargement/partage
   bool _isDownloading = false;
@@ -93,22 +91,16 @@ class _PaymentScreenState extends State<PaymentScreen>
     });
 
     try {
-      final filePath = await _downloadService.downloadReceiptPDF(
+      final success = await _receiptService.shareReceiptPDF(
         reservation: widget.reservation,
         terrain: widget.terrain,
       );
 
-      if (filePath != null) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Reçu PDF téléchargé avec succès'),
+          const SnackBar(
+            content: Text('Reçu PDF téléchargé avec succès'),
             backgroundColor: AppConstants.successColor,
-            action: filePath.contains('navigateur') ? null : SnackBarAction(
-              label: 'Voir',
-              onPressed: () {
-                // Optionnel: ouvrir le fichier
-              },
-            ),
           ),
         );
       } else {
@@ -129,14 +121,14 @@ class _PaymentScreenState extends State<PaymentScreen>
     });
 
     try {
-      final success = await _downloadService.shareReceiptPDF(
+      final success = await _receiptService.shareReceiptPDF(
         reservation: widget.reservation,
         terrain: widget.terrain,
       );
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Reçu PDF partagé avec succès'),
             backgroundColor: AppConstants.successColor,
           ),
@@ -153,13 +145,14 @@ class _PaymentScreenState extends State<PaymentScreen>
     }
   }
 
+/*
   Future<void> _copyReservationDetails() async {
     setState(() {
       _isCopying = true;
     });
 
     try {
-      final success = await _downloadService.copyReservationDetails(
+      final success = await _receiptService.copyReservationDetails(
         reservation: widget.reservation,
         terrain: widget.terrain,
       );
@@ -188,17 +181,18 @@ class _PaymentScreenState extends State<PaymentScreen>
       });
     }
   }
+*/
 
   Future<void> _shareReservationDetails() async {
     try {
-      final success = await _downloadService.shareReservationDetails(
+      final success = await _receiptService.shareReceiptPDF(
         reservation: widget.reservation,
         terrain: widget.terrain,
       );
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Row(
               children: [
                 Icon(Icons.text_fields, color: Colors.white, size: 20),
@@ -222,7 +216,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       context: context,
       builder: (BuildContext context) {
         return Container(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -230,13 +224,13 @@ class _PaymentScreenState extends State<PaymentScreen>
                 'Options de reçu',
                 style: AppConstants.subHeadingStyle.copyWith(fontSize: 18),
               ),
-              SizedBox(height: AppConstants.mediumPadding),
+              const SizedBox(height: AppConstants.mediumPadding),
 
               // Télécharger PDF
               ListTile(
-                leading: Icon(Icons.download, color: AppConstants.primaryColor),
-                title: Text('Télécharger PDF'),
-                subtitle: Text('Sauvegarder le reçu sur votre appareil'),
+                leading: const Icon(Icons.download, color: AppConstants.primaryColor),
+                title: const Text('Télécharger PDF'),
+                subtitle: const Text('Sauvegarder le reçu sur votre appareil'),
                 onTap: () {
                   Navigator.pop(context);
                   _downloadReceipt();
@@ -255,7 +249,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               ),
 
               // Copier détails
-              ListTile(
+              /*ListTile(
                 leading: Icon(Icons.copy, color: AppConstants.primaryColor),
                 title: Text('Copier les détails'),
                 subtitle: Text('Copier les informations dans le presse-papiers'),
@@ -263,20 +257,20 @@ class _PaymentScreenState extends State<PaymentScreen>
                   Navigator.pop(context);
                   _copyReservationDetails();
                 },
-              ),
+              ),*/
 
               // Copier détails complets
               ListTile(
-                leading: Icon(Icons.text_fields, color: AppConstants.primaryColor),
-                title: Text('Copier le format complet'),
-                subtitle: Text('Copier tous les détails sous forme de texte'),
+                leading: const Icon(Icons.text_fields, color: AppConstants.primaryColor),
+                title: const Text('Copier le format complet'),
+                subtitle: const Text('Copier tous les détails sous forme de texte'),
                 onTap: () {
                   Navigator.pop(context);
                   _shareReservationDetails();
                 },
               ),
 
-              SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: AppConstants.smallPadding),
             ],
           ),
         );

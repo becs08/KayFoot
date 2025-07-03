@@ -23,12 +23,13 @@ class _ReservationsScreenState extends State<ReservationsScreen>
   List<Reservation> _allReservations = [];
   List<Reservation> _activeReservations = [];
   List<Reservation> _pastReservations = [];
+  List<Reservation> _cancelledReservations = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadReservations();
   }
 
@@ -74,9 +75,13 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               int.parse(reservation.heureDebut.split(':')[1]),
             );
 
-            return reservationDateTime.isBefore(now) ||
-                   reservation.statut == StatutReservation.annulee ||
-                   reservation.statut == StatutReservation.terminee;
+            return reservationDateTime.isBefore(now) &&
+                   reservation.statut != StatutReservation.annulee &&
+                   reservation.statut != StatutReservation.terminee;
+          }).toList();
+
+          _cancelledReservations = reservations.where((reservation) {
+            return reservation.statut == StatutReservation.annulee;
           }).toList();
 
           _isLoading = false;
@@ -249,6 +254,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               text: 'Historique (${_pastReservations.length})',
               icon: Icon(Icons.history),
             ),
+            Tab(
+              text: 'Annulées (${_cancelledReservations.length})',
+              icon: Icon(Icons.cancel),
+            ),
           ],
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white,
@@ -262,6 +271,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               children: [
                 _buildReservationsList(_activeReservations),
                 _buildReservationsList(_pastReservations, showPast: true),
+                _buildReservationsList(_cancelledReservations, showCancelled: true),
               ],
             ),
     );
@@ -270,9 +280,10 @@ class _ReservationsScreenState extends State<ReservationsScreen>
   Widget _buildReservationsList(
     List<Reservation> reservations, {
     bool showPast = false,
+    bool showCancelled = false,
   }) {
     if (reservations.isEmpty) {
-      return _buildEmptyState(showPast);
+      return _buildEmptyState(showPast: showPast, showCancelled: showCancelled);
     }
 
     return RefreshIndicator(
@@ -284,18 +295,23 @@ class _ReservationsScreenState extends State<ReservationsScreen>
           return _buildReservationCard(
             reservations[index],
             showPast: showPast,
+            showCancelled: showCancelled,
           );
         },
       ),
     );
   }
 
-  Widget _buildEmptyState(bool showPast) {
+  Widget _buildEmptyState({bool showPast = false, bool showCancelled = false}) {
     String title;
     String subtitle;
     IconData icon;
 
-    if (showPast) {
+    if (showCancelled) {
+      title = 'Aucune réservation annulée';
+      subtitle = 'Aucune réservation annulée trouvée';
+      icon = Icons.cancel;
+    } else if (showPast) {
       title = 'Aucun historique';
       subtitle = 'Aucune réservation passée trouvée';
       icon = Icons.history;
@@ -315,7 +331,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             color: Colors.grey.shade400,
           ),
 
-          SizedBox(height: AppConstants.mediumPadding),
+          const SizedBox(height: AppConstants.mediumPadding),
 
           Text(
             title,
@@ -324,7 +340,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
             ),
           ),
 
-          SizedBox(height: AppConstants.smallPadding),
+          const SizedBox(height: AppConstants.smallPadding),
 
           Text(
             subtitle,
@@ -335,11 +351,11 @@ class _ReservationsScreenState extends State<ReservationsScreen>
           ),
 
           if (!showPast) ...[
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             ElevatedButton(
               onPressed: _navigateToTerrains,
-              child: Text('Réserver un terrain'),
+              child: const Text('Réserver un terrain'),
             ),
           ],
         ],
@@ -347,7 +363,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
     );
   }
 
-  Widget _buildReservationCard(Reservation reservation, {bool showPast = false}) {
+  Widget _buildReservationCard(Reservation reservation, {bool showPast = false, bool showCancelled = false}) {
     // Déterminer si la réservation est expirée
     final now = DateTime.now();
     final reservationDateTime = DateTime(
@@ -549,80 +565,46 @@ class _ReservationsScreenState extends State<ReservationsScreen>
               if (!showPast && (reservation.statut == StatutReservation.payee || reservation.statut == StatutReservation.avance)) ...[
                 const SizedBox(height: AppConstants.mediumPadding),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _cancelReservation(reservation),
-                        icon: const Icon(Icons.cancel, size: 16),
-                        label: const Text('Annuler'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppConstants.errorColor,
-                          side: const BorderSide(color: AppConstants.errorColor),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ReservationDetailScreen(
+                            reservation: reservation,
+                          ),
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(width: AppConstants.smallPadding),
-
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => ReservationDetailScreen(
-                                reservation: reservation,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.qr_code, size: 16),
-                        label: const Text('QR Code'),
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code, size: 16),
+                    label: const Text('Voir les détails'),
+                  ),
                 ),
               ],
 
-              // Bouton supprimer pour les réservations passées
-              if (showPast && _isPastReservation(reservation)) ...[
+              // Bouton voir détails pour les réservations passées et annulées
+              if ((showPast && _isPastReservation(reservation)) || showCancelled) ...[
                 const SizedBox(height: AppConstants.mediumPadding),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _deleteReservation(reservation),
-                        icon: const Icon(Icons.delete_outline, size: 16),
-                        label: const Text('Supprimer'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppConstants.errorColor,
-                          side: const BorderSide(color: AppConstants.errorColor),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ReservationDetailScreen(
+                            reservation: reservation,
+                          ),
                         ),
-                      ),
+                      );
+                    },
+                    icon: const Icon(Icons.visibility, size: 16),
+                    label: const Text('Voir détails'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade600,
                     ),
-
-                    const SizedBox(width: AppConstants.smallPadding),
-
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => ReservationDetailScreen(
-                                reservation: reservation,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.visibility, size: 16),
-                        label: const Text('Voir détails'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ],

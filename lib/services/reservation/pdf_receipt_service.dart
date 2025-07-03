@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -30,7 +29,9 @@ class PdfReceiptService {
 
       return true;
     } catch (e) {
-      print('❌ Erreur génération reçu PDF: $e');
+      if (kDebugMode) {
+        print('❌ Erreur génération reçu PDF: $e');
+      }
       return false;
     }
   }
@@ -353,7 +354,7 @@ class PdfReceiptService {
             color: PdfColors.grey400,
           ),
           pw.SizedBox(height: 10),
-          
+
           // Badge de statut de paiement
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -373,9 +374,9 @@ class PdfReceiptService {
               ),
             ),
           ),
-          
+
           pw.SizedBox(height: 15),
-          
+
           // Détails financiers selon le type de paiement
           if (reservation.isPaiementAvance) ...[
             pw.Row(
@@ -420,7 +421,7 @@ class PdfReceiptService {
               ],
             ),
             pw.SizedBox(height: 10),
-            
+
             // Note importante pour l'avance
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
@@ -439,7 +440,7 @@ class PdfReceiptService {
               ),
             ),
             pw.SizedBox(height: 15),
-            
+
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
