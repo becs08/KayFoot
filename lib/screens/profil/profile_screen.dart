@@ -463,6 +463,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Ville',
               value: _user!.ville,
             ),
+
+            if (_user!.username != null && _user!.username!.isNotEmpty)
+              _buildInfoRow(
+                icon: Icons.alternate_email,
+                label: 'Pseudo',
+                value: '@${_user!.username}',
+              ),
           ],
         ),
       ),

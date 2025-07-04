@@ -134,6 +134,7 @@ class FirebaseAuthWrapper {
         photo: data['photo'],
         dateCreation: (data['dateCreation'] as Timestamp?)?.toDate() ?? DateTime.now(),
         statistiques: Map<String, dynamic>.from(data['statistiques'] ?? {}),
+        username: data['username'],
       );
     } catch (e) {
       print('❌ Erreur getUserFromFirestore: $e');

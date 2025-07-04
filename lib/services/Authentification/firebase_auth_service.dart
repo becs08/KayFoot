@@ -260,6 +260,10 @@ class FirebaseAuthService {
         updateData['photo'] = user.photo!;
       }
 
+      if (user.username != null) {
+        updateData['username'] = user.username!;
+      }
+
       await firestore.FirebaseFirestore.instance
           .collection('users')
           .doc(user.id)

@@ -58,7 +58,7 @@ void main() async {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
               SizedBox(height: 16),
               const Text(
                 'Erreur d\'initialisation',

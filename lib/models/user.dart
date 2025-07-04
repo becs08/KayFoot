@@ -8,6 +8,7 @@ class User {
   final String? photo;
   final DateTime dateCreation;
   final Map<String, dynamic> statistiques;
+  final String? username;
 
   User({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     this.photo,
     required this.dateCreation,
     this.statistiques = const {},
+    this.username,
   });
 
   // 🔥 NOUVELLES MÉTHODES FIREBASE
@@ -36,6 +38,7 @@ class User {
       photo: data['photo'],
       dateCreation: data['dateCreation']?.toDate() ?? DateTime.now(),
       statistiques: Map<String, dynamic>.from(data['statistiques'] ?? {}),
+      username: data['username'],
     );
   }
 
@@ -49,6 +52,7 @@ class User {
       'photo': photo,
       'dateCreation': dateCreation,
       'statistiques': statistiques,
+      'username': username,
     };
   }
 
@@ -93,6 +97,7 @@ class User {
     String? photo,
     DateTime? dateCreation,
     Map<String, dynamic>? statistiques,
+    String? username,
   }) {
     return User(
       id: id ?? this.id,
@@ -104,6 +109,7 @@ class User {
       photo: photo ?? this.photo,
       dateCreation: dateCreation ?? this.dateCreation,
       statistiques: statistiques ?? this.statistiques,
+      username: username ?? this.username,
     );
   }
 }

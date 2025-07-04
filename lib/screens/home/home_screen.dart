@@ -12,6 +12,7 @@ import '../terrain/list_screen.dart';
 import '../terrain/terrains_proches_screen.dart';
 import '../profil/profile_screen.dart';
 import '../reservation/reservations_screen.dart';
+import '../social/social_main_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -120,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
           ),
+          const SocialMainScreen(),
           ProfileScreen(),
         ],
       ),
@@ -145,6 +147,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.event_note),
             label: 'Réservations',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Social',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -336,6 +342,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       SnackBar(content: Text('Fonctionnalité à venir')),
                     );
                   }
+                },
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppConstants.mediumPadding),
+
+        // Section Social
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.people,
+                title: 'Mes amis',
+                subtitle: 'Gérer vos amis',
+                onTap: () {
+                  setState(() {
+                    _currentIndex = 3; // Onglet Social
+                  });
+                },
+              ),
+            ),
+
+            const SizedBox(width: AppConstants.mediumPadding),
+
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.groups,
+                title: 'Teams',
+                subtitle: 'Créer ou rejoindre',
+                onTap: () {
+                  setState(() {
+                    _currentIndex = 3; // Onglet Social
+                  });
                 },
               ),
             ),
