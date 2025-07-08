@@ -15,6 +15,8 @@ class Terrain {
   final double notemoyenne;
   final int nombreAvis;
   final DateTime dateCreation;
+  final bool estValide; // Validation par le super-admin
+  final DateTime? dateValidation;
 
   Terrain({
     required this.id,
@@ -33,6 +35,8 @@ class Terrain {
     this.notemoyenne = 0.0,
     this.nombreAvis = 0,
     required this.dateCreation,
+    this.estValide = false,
+    this.dateValidation,
   });
 
   factory Terrain.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,10 @@ class Terrain {
       notemoyenne: json['notemoyenne']?.toDouble() ?? 0.0,
       nombreAvis: json['nombreAvis'] ?? 0,
       dateCreation: DateTime.parse(json['dateCreation']),
+      estValide: json['estValide'] ?? false,
+      dateValidation: json['dateValidation'] != null 
+          ? DateTime.parse(json['dateValidation']) 
+          : null,
     );
   }
 
@@ -78,6 +86,8 @@ class Terrain {
       'notemoyenne': notemoyenne,
       'nombreAvis': nombreAvis,
       'dateCreation': dateCreation.toIso8601String(),
+      'estValide': estValide,
+      'dateValidation': dateValidation?.toIso8601String(),
     };
   }
 
@@ -98,6 +108,8 @@ class Terrain {
     double? notemoyenne,
     int? nombreAvis,
     DateTime? dateCreation,
+    bool? estValide,
+    DateTime? dateValidation,
   }) {
     return Terrain(
       id: id ?? this.id,
@@ -116,6 +128,8 @@ class Terrain {
       notemoyenne: notemoyenne ?? this.notemoyenne,
       nombreAvis: nombreAvis ?? this.nombreAvis,
       dateCreation: dateCreation ?? this.dateCreation,
+      estValide: estValide ?? this.estValide,
+      dateValidation: dateValidation ?? this.dateValidation,
     );
   }
 }

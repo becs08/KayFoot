@@ -1,3 +1,5 @@
+import 'enums.dart';
+
 class Reservation {
   final String id;
   final String joueurId;
@@ -122,18 +124,4 @@ class Reservation {
       dateAnnulation: dateAnnulation ?? this.dateAnnulation,
     );
   }
-}
-
-enum StatutReservation {
-  enAttente,
-  confirmee,
-  avance,
-  payee,
-  annulee,
-  terminee,
-}
-
-enum ModePaiement {
-  orange,
-  wave,
 }

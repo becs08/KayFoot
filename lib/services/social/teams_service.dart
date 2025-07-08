@@ -6,11 +6,13 @@ import '../../models/social/team_event.dart';
 import '../../models/social/team_request.dart';
 import '../../models/user.dart';
 import '../Authentification/auth_service.dart';
+import '../cache/cache_service.dart';
 import 'dart:math';
 
 class TeamsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService = AuthService();
+  CacheService? _cacheService;
 
   // Collections
   CollectionReference get _teamsCollection => _firestore.collection('teams');
@@ -19,6 +21,11 @@ class TeamsService {
   CollectionReference get _teamEventsCollection => _firestore.collection('teamEvents');
   CollectionReference get _teamRequestsCollection => _firestore.collection('teamRequests');
   CollectionReference get _usersCollection => _firestore.collection('users');
+
+  // Initialiser le service de cache
+  Future<void> _initCacheService() async {
+    _cacheService ??= await CacheService.getInstance();
+  }
 
   // Créer une nouvelle team
   Future<String> createTeam({
@@ -80,6 +87,9 @@ class TeamsService {
 
       await _teamMembersCollection.doc(teamMemberId).set(teamMember.toFirestore());
 
+      // Invalider le cache des teams de l'utilisateur
+      await _invalidateAllTeamsCache();
+
       return teamRef.id;
     } catch (e) {
       throw Exception('Erreur lors de la création de la team: $e');
@@ -112,7 +122,90 @@ class TeamsService {
             .toList());
   }
 
-  // Récupérer les teams de l'utilisateur
+  // Récupérer les teams de l'utilisateur avec cache
+  Future<List<Team>> getUserTeamsCached({bool forceRefresh = false}) async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) return [];
+
+      await _initCacheService();
+
+      // Essayer de récupérer depuis le cache d'abord
+      if (!forceRefresh) {
+        final cachedData = _cacheService?.getUserTeams();
+        if (cachedData != null && cachedData.isNotEmpty) {
+          print('📱 Teams utilisateur récupérées depuis le cache');
+          return cachedData.map((teamData) => Team(
+            id: teamData['id'],
+            name: teamData['name'],
+            description: teamData['description'],
+            avatar: teamData['avatar'],
+            creatorId: teamData['creatorId'],
+            creatorUsername: teamData['creatorUsername'],
+            adminIds: List<String>.from(teamData['adminIds']),
+            privacy: TeamPrivacy.values.firstWhere(
+              (e) => e.toString() == 'TeamPrivacy.${teamData['privacy']}',
+              orElse: () => TeamPrivacy.public,
+            ),
+            createdAt: DateTime.parse(teamData['createdAt']),
+            updatedAt: DateTime.parse(teamData['updatedAt']),
+            memberCount: teamData['memberCount'],
+            maxMembers: teamData['maxMembers'],
+            settings: teamData['settings'],
+            tags: List<String>.from(teamData['tags']),
+          )).toList();
+        }
+      }
+
+      // Récupérer depuis Firestore
+      print('🔥 Récupération teams utilisateur depuis Firestore');
+      final memberSnapshot = await _teamMembersCollection
+          .where('userId', isEqualTo: currentUser.id)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      final teamIds = memberSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>)
+          .map((data) => data['teamId'] as String)
+          .toList();
+
+      if (teamIds.isEmpty) return [];
+
+      final teamsQuery = await _teamsCollection
+          .where(FieldPath.documentId, whereIn: teamIds)
+          .get();
+
+      final teams = teamsQuery.docs
+          .map((doc) => Team.fromFirestore(doc))
+          .toList();
+
+      // Sauvegarder dans le cache
+      final teamsData = teams.map((team) => {
+        'id': team.id,
+        'name': team.name,
+        'description': team.description,
+        'avatar': team.avatar,
+        'creatorId': team.creatorId,
+        'creatorUsername': team.creatorUsername,
+        'adminIds': team.adminIds,
+        'privacy': team.privacy.toString().split('.').last,
+        'createdAt': team.createdAt.toIso8601String(),
+        'updatedAt': team.updatedAt.toIso8601String(),
+        'memberCount': team.memberCount,
+        'maxMembers': team.maxMembers,
+        'settings': team.settings,
+        'tags': team.tags,
+      }).toList();
+
+      await _cacheService?.saveUserTeams(teamsData);
+
+      return teams;
+    } catch (e) {
+      print('Erreur getUserTeamsCached: $e');
+      return [];
+    }
+  }
+
+  // Récupérer les teams de l'utilisateur (Stream version pour l'UI)
   Stream<List<Team>> getUserTeams() {
     final currentUser = _authService.currentUser;
     if (currentUser == null) {
@@ -140,9 +233,40 @@ class TeamsService {
     });
   }
 
-  // Récupérer une team par ID
-  Future<Team?> getTeamById(String teamId) async {
+  // Récupérer une team par ID avec cache
+  Future<Team?> getTeamById(String teamId, {bool forceRefresh = false}) async {
     try {
+      await _initCacheService();
+
+      // Essayer de récupérer depuis le cache d'abord
+      if (!forceRefresh) {
+        final cachedData = _cacheService?.getTeamDetails(teamId);
+        if (cachedData != null) {
+          print('📱 Team $teamId récupérée depuis le cache');
+          return Team(
+            id: cachedData['id'],
+            name: cachedData['name'],
+            description: cachedData['description'],
+            avatar: cachedData['avatar'],
+            creatorId: cachedData['creatorId'],
+            creatorUsername: cachedData['creatorUsername'],
+            adminIds: List<String>.from(cachedData['adminIds']),
+            privacy: TeamPrivacy.values.firstWhere(
+              (e) => e.toString() == 'TeamPrivacy.${cachedData['privacy']}',
+              orElse: () => TeamPrivacy.public,
+            ),
+            createdAt: DateTime.parse(cachedData['createdAt']),
+            updatedAt: DateTime.parse(cachedData['updatedAt']),
+            memberCount: cachedData['memberCount'],
+            maxMembers: cachedData['maxMembers'],
+            settings: cachedData['settings'],
+            tags: List<String>.from(cachedData['tags']),
+          );
+        }
+      }
+
+      // Récupérer depuis Firestore
+      print('🔥 Récupération team $teamId depuis Firestore');
       final doc = await _teamsCollection.doc(teamId).get();
       if (doc.exists) {
         final team = Team.fromFirestore(doc);
@@ -163,7 +287,27 @@ class TeamsService {
         
         // Retourner la team mise à jour
         final updatedDoc = await _teamsCollection.doc(teamId).get();
-        return Team.fromFirestore(updatedDoc);
+        final finalTeam = Team.fromFirestore(updatedDoc);
+
+        // Sauvegarder dans le cache
+        await _cacheService?.saveTeamDetails(teamId, {
+          'id': finalTeam.id,
+          'name': finalTeam.name,
+          'description': finalTeam.description,
+          'avatar': finalTeam.avatar,
+          'creatorId': finalTeam.creatorId,
+          'creatorUsername': finalTeam.creatorUsername,
+          'adminIds': finalTeam.adminIds,
+          'privacy': finalTeam.privacy.toString().split('.').last,
+          'createdAt': finalTeam.createdAt.toIso8601String(),
+          'updatedAt': finalTeam.updatedAt.toIso8601String(),
+          'memberCount': finalTeam.memberCount,
+          'maxMembers': finalTeam.maxMembers,
+          'settings': finalTeam.settings,
+          'tags': finalTeam.tags,
+        });
+
+        return finalTeam;
       }
       return null;
     } catch (e) {
@@ -267,6 +411,9 @@ class TeamsService {
         'memberCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
+
+      // Invalider le cache
+      await _invalidateTeamCache(teamId);
     } catch (e) {
       throw Exception('Erreur lors de l\'adhésion à la team: $e');
     }
@@ -306,6 +453,9 @@ class TeamsService {
         'memberCount': FieldValue.increment(-1),
         'updatedAt': Timestamp.now(),
       });
+
+      // Invalider le cache
+      await _invalidateTeamCache(teamId);
     } catch (e) {
       throw Exception('Erreur lors de la sortie de la team: $e');
     }
@@ -362,6 +512,9 @@ class TeamsService {
         'memberCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
+
+      // Invalider le cache
+      await _invalidateTeamCache(teamId);
     } catch (e) {
       throw Exception('Erreur lors de l\'invitation: $e');
     }
@@ -403,6 +556,9 @@ class TeamsService {
           'adminIds': FieldValue.arrayUnion([userId]),
           'updatedAt': Timestamp.now(),
         });
+
+        // Invalider le cache
+        await _invalidateTeamCache(teamId);
       }
     } catch (e) {
       throw Exception('Erreur lors de la promotion: $e');
@@ -451,6 +607,9 @@ class TeamsService {
           'memberCount': FieldValue.increment(-1),
           'updatedAt': Timestamp.now(),
         });
+
+        // Invalider le cache
+        await _invalidateTeamCache(teamId);
       }
     } catch (e) {
       throw Exception('Erreur lors de la suppression du membre: $e');
@@ -490,6 +649,9 @@ class TeamsService {
       if (maxMembers != null) updates['maxMembers'] = maxMembers;
 
       await _teamsCollection.doc(teamId).update(updates);
+
+      // Invalider le cache
+      await _invalidateTeamCache(teamId);
     } catch (e) {
       throw Exception('Erreur lors de la mise à jour de la team: $e');
     }
@@ -542,14 +704,57 @@ class TeamsService {
       batch.delete(_teamsCollection.doc(teamId));
 
       await batch.commit();
+
+      // Invalider le cache
+      await _invalidateTeamCache(teamId);
     } catch (e) {
       throw Exception('Erreur lors de la suppression de la team: $e');
     }
   }
 
-  // Récupérer un membre spécifique d'une team
-  Future<TeamMember?> getUserTeamMember(String teamId, String userId) async {
+  // Récupérer un membre spécifique d'une team avec cache
+  Future<TeamMember?> getUserTeamMember(String teamId, String userId, {bool forceRefresh = false}) async {
     try {
+      await _initCacheService();
+
+      // Essayer de récupérer depuis le cache d'abord
+      if (!forceRefresh) {
+        final cachedMembers = _cacheService?.getTeamMembers(teamId);
+        if (cachedMembers != null) {
+          final memberData = cachedMembers.firstWhere(
+            (member) => member['userId'] == userId && member['status'] == 'active',
+            orElse: () => <String, dynamic>{},
+          );
+          
+          if (memberData.isNotEmpty) {
+            print('📱 Membre $userId de la team $teamId récupéré depuis le cache');
+            return TeamMember(
+              id: memberData['id'],
+              teamId: memberData['teamId'],
+              userId: memberData['userId'],
+              username: memberData['username'],
+              name: memberData['name'],
+              avatar: memberData['avatar'],
+              role: TeamMemberRole.values.firstWhere(
+                (e) => e.toString() == 'TeamMemberRole.${memberData['role']}',
+                orElse: () => TeamMemberRole.member,
+              ),
+              status: TeamMemberStatus.values.firstWhere(
+                (e) => e.toString() == 'TeamMemberStatus.${memberData['status']}',
+                orElse: () => TeamMemberStatus.active,
+              ),
+              joinedAt: DateTime.parse(memberData['joinedAt']),
+              lastActiveAt: memberData['lastActiveAt'] != null 
+                  ? DateTime.parse(memberData['lastActiveAt'])
+                  : null,
+              joinedBy: memberData['joinedBy'],
+              permissions: memberData['permissions'],
+            );
+          }
+        }
+      }
+
+      // Récupérer depuis Firestore
       final memberQuery = await _teamMembersCollection
           .where('teamId', isEqualTo: teamId)
           .where('userId', isEqualTo: userId)
@@ -557,11 +762,51 @@ class TeamsService {
           .get();
 
       if (memberQuery.docs.isNotEmpty) {
-        return TeamMember.fromFirestore(memberQuery.docs.first);
+        final member = TeamMember.fromFirestore(memberQuery.docs.first);
+        
+        // Mettre à jour le cache des membres de cette team
+        await _cacheTeamMembers(teamId);
+        
+        return member;
       }
       return null;
     } catch (e) {
+      print('Erreur getUserTeamMember: $e');
       return null;
+    }
+  }
+
+  // Mettre en cache tous les membres d'une team
+  Future<void> _cacheTeamMembers(String teamId) async {
+    try {
+      final membersQuery = await _teamMembersCollection
+          .where('teamId', isEqualTo: teamId)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      final membersData = membersQuery.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'teamId': data['teamId'],
+          'userId': data['userId'],
+          'username': data['username'],
+          'name': data['name'],
+          'avatar': data['avatar'],
+          'role': data['role'],
+          'status': data['status'],
+          'joinedAt': (data['joinedAt'] as Timestamp).toDate().toIso8601String(),
+          'lastActiveAt': data['lastActiveAt'] != null 
+              ? (data['lastActiveAt'] as Timestamp).toDate().toIso8601String()
+              : null,
+          'joinedBy': data['joinedBy'],
+          'permissions': data['permissions'],
+        };
+      }).toList();
+
+      await _cacheService?.saveTeamMembers(teamId, membersData);
+    } catch (e) {
+      print('Erreur _cacheTeamMembers: $e');
     }
   }
 
@@ -876,6 +1121,9 @@ class TeamsService {
         'memberCount': FieldValue.increment(1),
         'updatedAt': Timestamp.fromDate(now),
       });
+
+      // Invalider le cache
+      await _invalidateTeamCache(request.teamId);
     } catch (e) {
       throw Exception('Erreur lors de l\'acceptation: $e');
     }
@@ -970,5 +1218,19 @@ class TeamsService {
         .map((snapshot) => snapshot.docs
             .map((doc) => TeamRequest.fromFirestore(doc))
             .toList());
+  }
+
+  // Invalider le cache d'une team spécifique
+  Future<void> _invalidateTeamCache(String teamId) async {
+    await _initCacheService();
+    await _cacheService?.invalidateTeamCache(teamId);
+    print('🗑️ Cache invalidé pour la team $teamId');
+  }
+
+  // Invalider tout le cache des teams
+  Future<void> _invalidateAllTeamsCache() async {
+    await _initCacheService();
+    await _cacheService?.invalidateTeamsCache();
+    print('🗑️ Cache de toutes les teams invalidé');
   }
 }

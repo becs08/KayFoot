@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kay_foot/models/reservation_extended.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/services.dart';
 import '../../constants/app_constants.dart';
+import '../../models/enums.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../services/reservation/pdf_receipt_service.dart';
@@ -12,10 +13,10 @@ class PaymentScreen extends StatefulWidget {
   final Terrain terrain;
 
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.reservation,
     required this.terrain,
-  }) : super(key: key);
+  });
 
   @override
   _PaymentScreenState createState() => _PaymentScreenState();
@@ -33,14 +34,14 @@ class _PaymentScreenState extends State<PaymentScreen>
   // États pour les actions de téléchargement/partage
   bool _isDownloading = false;
   bool _isSharing = false;
-  bool _isCopying = false;
+  final bool _isCopying = false;
 
   @override
   void initState() {
     super.initState();
 
     _animationController = AnimationController(
-      duration: Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
@@ -53,7 +54,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     ));
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.5),
+      begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -239,9 +240,9 @@ class _PaymentScreenState extends State<PaymentScreen>
 
               // Partager PDF
               ListTile(
-                leading: Icon(Icons.share, color: AppConstants.primaryColor),
-                title: Text('Partager PDF'),
-                subtitle: Text('Partager le reçu PDF via vos applications'),
+                leading: const Icon(Icons.share, color: AppConstants.primaryColor),
+                title: const Text('Partager PDF'),
+                subtitle: const Text('Partager le reçu PDF via vos applications'),
                 onTap: () {
                   Navigator.pop(context);
                   _shareReceipt();
@@ -283,19 +284,19 @@ class _PaymentScreenState extends State<PaymentScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: Text('Paiement confirmé'),
+        title: const Text('Paiement confirmé'),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.green,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.close),
+            icon: const Icon(Icons.close),
             onPressed: _navigateToHome,
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppConstants.largePadding),
+        padding: const EdgeInsets.all(AppConstants.largePadding),
         child: Column(
           children: [
             // Animation de succès
@@ -304,11 +305,11 @@ class _PaymentScreenState extends State<PaymentScreen>
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppConstants.successColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.check,
                   color: Colors.white,
                   size: 50,
@@ -316,7 +317,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               ),
             ),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             Text(
               'Réservation confirmée !',
@@ -327,7 +328,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               textAlign: TextAlign.center,
             ),
 
-            SizedBox(height: AppConstants.smallPadding),
+            const SizedBox(height: AppConstants.smallPadding),
 
             Text(
               'Votre paiement a été traité avec succès',
@@ -337,7 +338,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               textAlign: TextAlign.center,
             ),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Reçu de réservation
             SlideTransition(
@@ -345,12 +346,12 @@ class _PaymentScreenState extends State<PaymentScreen>
               child: _buildReceipt(),
             ),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // QR Code
             _buildQRCode(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Boutons d'action
             _buildActionButtons(),
@@ -367,7 +368,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
       ),
       child: Padding(
-        padding: EdgeInsets.all(AppConstants.largePadding),
+        padding: const EdgeInsets.all(AppConstants.largePadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -378,7 +379,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                   // Badge de statut de paiement
                   if (widget.reservation.isPaiementAvance) ...[
                     Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.mediumPadding,
                         vertical: AppConstants.smallPadding,
                       ),
@@ -395,7 +396,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                             size: 16,
                             color: Colors.orange.shade700,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'PAIEMENT EN AVANCE',
                             style: AppConstants.bodyStyle.copyWith(
@@ -407,10 +408,10 @@ class _PaymentScreenState extends State<PaymentScreen>
                         ],
                       ),
                     ),
-                    SizedBox(height: AppConstants.mediumPadding),
+                    const SizedBox(height: AppConstants.mediumPadding),
                   ] else ...[
                     Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.mediumPadding,
                         vertical: AppConstants.smallPadding,
                       ),
@@ -427,7 +428,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                             size: 16,
                             color: Colors.green.shade700,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'PAIEMENT COMPLET',
                             style: AppConstants.bodyStyle.copyWith(
@@ -439,7 +440,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                         ],
                       ),
                     ),
-                    SizedBox(height: AppConstants.mediumPadding),
+                    const SizedBox(height: AppConstants.mediumPadding),
                   ],
 
                   Text(
@@ -450,7 +451,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                     ),
                   ),
 
-                  SizedBox(height: AppConstants.smallPadding),
+                  const SizedBox(height: AppConstants.smallPadding),
 
                   Text(
                     'N° ${widget.reservation.id}',
@@ -473,14 +474,14 @@ class _PaymentScreenState extends State<PaymentScreen>
             _buildReceiptRow('Terrain', widget.terrain.nom),
             _buildReceiptRow('Adresse', '${widget.terrain.adresse}, ${widget.terrain.ville}'),
             _buildReceiptRow('Date', _formatDate(widget.reservation.date)),
-            _buildReceiptRow('Créneau', '${widget.reservation.heureDebut} - ${widget.reservation.heureFin}'),
+            _buildReceiptRow('Créneau', widget.reservation.horairesFormatted),
             _buildReceiptRow('Durée', '1 heure'),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
-            Divider(),
+            const Divider(),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
             // Détails du paiement
             _buildReceiptRow('Mode de paiement', _getPaymentMethodName(widget.reservation.modePaiement)),
@@ -488,11 +489,11 @@ class _PaymentScreenState extends State<PaymentScreen>
               _buildReceiptRow('ID Transaction', widget.reservation.transactionId!),
             _buildReceiptRow('Date de paiement', _formatDateTime(widget.reservation.dateCreation)),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
-            Divider(),
+            const Divider(),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
             // Détails financiers selon le type de paiement
             if (widget.reservation.isPaiementAvance) ...[
@@ -500,10 +501,10 @@ class _PaymentScreenState extends State<PaymentScreen>
               _buildReceiptRow('Avance payée', '${widget.reservation.montantAvance.toInt()} FCFA'),
               _buildReceiptRow('Reste à payer', '${widget.reservation.montantRestant.toInt()} FCFA'),
 
-              SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: AppConstants.smallPadding),
 
               Container(
-                padding: EdgeInsets.all(AppConstants.smallPadding),
+                padding: const EdgeInsets.all(AppConstants.smallPadding),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -512,7 +513,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                 child: Row(
                   children: [
                     Icon(Icons.info, color: Colors.orange.shade600, size: 16),
-                    SizedBox(width: AppConstants.smallPadding),
+                    const SizedBox(width: AppConstants.smallPadding),
                     Expanded(
                       child: Text(
                         'Le montant restant de ${widget.reservation.montantRestant.toInt()} FCFA sera à régler le jour du match.',
@@ -526,7 +527,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ),
 
-              SizedBox(height: AppConstants.mediumPadding),
+              const SizedBox(height: AppConstants.mediumPadding),
 
               // Total payé maintenant
               Row(
@@ -591,7 +592,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                     color: AppConstants.accentColor,
                     size: 20,
                   ),
-                  SizedBox(width: AppConstants.smallPadding),
+                  const SizedBox(width: AppConstants.smallPadding),
                   Expanded(
                     child: Text(
                       'Présentez ce QR code à l\'entrée du terrain pour confirmer votre réservation.',

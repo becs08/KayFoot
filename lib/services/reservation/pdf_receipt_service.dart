@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:kay_foot/models/reservation_extended.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../models/enums.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../constants/app_constants.dart';
@@ -286,7 +288,7 @@ class PdfReceiptService {
                 child: _buildDetailRow('Date:', _formatDate(reservation.date), font: font, fontBold: fontBold),
               ),
               pw.Expanded(
-                child: _buildDetailRow('Créneau:', '${reservation.heureDebut} - ${reservation.heureFin}', font: font, fontBold: fontBold),
+                child: _buildDetailRow('Créneau:', reservation.horairesFormatted, font: font, fontBold: fontBold),
               ),
             ],
           ),

@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kay_foot/models/reservation_extended.dart';
+import '../../models/enums.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../terrain/terrain_service.dart';
@@ -46,7 +48,7 @@ class QRReceiptService {
       // Créer l'objet Reservation
       final montant = reservationData['montant'].toDouble();
       final isPaiementAvance = reservationData['isPaiementAvance'] ?? false;
-      
+
       final reservation = Reservation(
         id: reservationDoc.id,
         joueurId: reservationData['joueurId'],
@@ -55,9 +57,9 @@ class QRReceiptService {
         heureDebut: reservationData['heureDebut'],
         heureFin: reservationData['heureFin'],
         montant: montant,
-        montantAvance: reservationData['montantAvance']?.toDouble() ?? 
+        montantAvance: reservationData['montantAvance']?.toDouble() ??
                       (isPaiementAvance ? montant * 0.5 : montant),
-        montantRestant: reservationData['montantRestant']?.toDouble() ?? 
+        montantRestant: reservationData['montantRestant']?.toDouble() ??
                        (isPaiementAvance ? montant * 0.5 : 0.0),
         isPaiementAvance: isPaiementAvance,
         statut: _parseStatut(reservationData['statut']),
@@ -72,7 +74,7 @@ class QRReceiptService {
 
       // Récupérer les informations du terrain
       final terrain = await _terrainService.getTerrainById(reservation.terrainId);
-      
+
       if (terrain == null) {
         return QRReceiptResult(
           success: false,
@@ -281,7 +283,7 @@ class QRReceiptService {
                 </div>
                 <div class="info-row">
                     <span class="info-label">Créneau</span>
-                    <span class="info-value">${reservation.heureDebut} - ${reservation.heureFin}</span>
+                    <span class="info-value">${reservation.horairesFormatted}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Statut</span>

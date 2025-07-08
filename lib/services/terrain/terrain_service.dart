@@ -21,7 +21,7 @@ class TerrainService {
 
       final snapshot = await _firestore
           .collection('terrains')
-          .where('isActive', isEqualTo: true)  // Seulement les terrains actifs
+          .where('estValide', isEqualTo: true)  // Seulement les terrains validés
           .orderBy('notemoyenne', descending: true)  // Mieux notés d'abord
           .get();
 
@@ -57,7 +57,7 @@ class TerrainService {
       final snapshot = await _firestore
           .collection('terrains')
           .where('ville', isEqualTo: ville)
-          .where('isActive', isEqualTo: true)
+          .where('estValide', isEqualTo: true)
           .orderBy('notemoyenne', descending: true)
           .get();
 
@@ -266,8 +266,7 @@ class TerrainService {
       print('➕ Ajout nouveau terrain: ${terrain.nom}');
 
       // Préparer les données pour Firestore
-      final terrainData = terrain.toFirestore();
-      terrainData['isActive'] = true;
+      final terrainData = terrain.toJson();
       terrainData['dateCreation'] = FieldValue.serverTimestamp();
 
       final docRef = await _firestore.collection('terrains').add(terrainData);
@@ -293,7 +292,7 @@ class TerrainService {
     try {
       print('🔄 Mise à jour terrain: ${terrain.nom}');
 
-      final terrainData = terrain.toFirestore();
+      final terrainData = terrain.toJson();
       // Ne pas écraser dateCreation
       terrainData.remove('dateCreation');
 
@@ -374,9 +373,9 @@ class TerrainService {
     try {
       print('🗑️ Suppression terrain: $terrainId');
 
-      // Soft delete - marquer comme inactif
+      // Soft delete - marquer comme non validé
       await _firestore.collection('terrains').doc(terrainId).update({
-        'isActive': false,
+        'estValide': false,
         'dateDesactivation': FieldValue.serverTimestamp(),
       });
 
@@ -397,7 +396,7 @@ class TerrainService {
 
   // Les méthodes d'avis ont été déplacées vers AvisService pour une meilleure séparation des responsabilités
 
-  /// 🏢 Récupère les terrains d'un gérant
+  /// 🏢 Récupère tous les terrains d'un gérant (validés et non validés)
   Future<List<Terrain>> getTerrainsByGerant(String gerantId) async {
     try {
       print('🏢 Terrains du gérant: $gerantId');
@@ -405,17 +404,138 @@ class TerrainService {
       final snapshot = await _firestore
           .collection('terrains')
           .where('gerantId', isEqualTo: gerantId)
-          .where('isActive', isEqualTo: true)
           .orderBy('dateCreation', descending: true)
           .get();
 
       final terrains = snapshot.docs.map((doc) => _terrainFromFirestore(doc)).toList();
-      print('🏢 ${terrains.length} terrains gérés');
+      print('🏢 ${terrains.length} terrains gérés (validés: ${terrains.where((t) => t.estValide).length})');
 
       return terrains;
     } catch (e) {
       print('❌ Erreur getTerrainsByGerant: $e');
       rethrow;
+    }
+  }
+
+  /// 🔧 Répare un terrain existant avec les nouveaux champs
+  Future<TerrainResult> repairTerrain(String terrainId) async {
+    try {
+      print('🔧 Réparation terrain: $terrainId');
+
+      final doc = await _firestore.collection('terrains').doc(terrainId).get();
+      
+      if (!doc.exists) {
+        return TerrainResult(
+          success: false,
+          message: 'Terrain non trouvé',
+        );
+      }
+
+      final data = doc.data()!;
+      final updates = <String, dynamic>{};
+
+      // Ajouter les champs manquants
+      if (!data.containsKey('estValide')) {
+        updates['estValide'] = false;
+      }
+      
+      if (!data.containsKey('dateValidation')) {
+        updates['dateValidation'] = null;
+      }
+
+      // Vérifier et réparer les disponibilités
+      if (data['disponibilites'] == null || (data['disponibilites'] as Map).isEmpty) {
+        // Créer des disponibilités par défaut au format "HH:MM-HH:MM"
+        final defaultSchedule = {
+          'lundi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'mardi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'mercredi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'jeudi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'vendredi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'samedi': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+          'dimanche': ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00', '21:00-22:00'],
+        };
+        updates['disponibilites'] = defaultSchedule;
+      } else {
+        // Vérifier si les disponibilités existantes sont au bon format
+        final existingDisponibilites = data['disponibilites'] as Map<String, dynamic>;
+        final repairedDisponibilites = <String, List<String>>{};
+        bool needsRepair = false;
+        
+        for (final entry in existingDisponibilites.entries) {
+          final jour = entry.key;
+          final creneaux = List<String>.from(entry.value ?? []);
+          final nouveauxCreneaux = <String>[];
+          
+          for (final creneau in creneaux) {
+            // Vérifier si le créneau est déjà au format "HH:MM-HH:MM"
+            if (creneau.contains('-')) {
+              // Créneau déjà au bon format
+              nouveauxCreneaux.add(creneau);
+            } else {
+              // Convertir de "HH:MM" ou "HH" au format "HH:MM-HH:MM"
+              needsRepair = true;
+              String heureDebut;
+              
+              if (creneau.contains(':')) {
+                heureDebut = creneau;
+              } else {
+                // Format "9" ou "09" -> "09:00"
+                final heure = int.tryParse(creneau) ?? 0;
+                heureDebut = '${heure.toString().padLeft(2, '0')}:00';
+              }
+              
+              // Calculer l'heure de fin (1 heure après)
+              final parts = heureDebut.split(':');
+              final heureInt = int.parse(parts[0]);
+              final heureFin = '${(heureInt + 1).toString().padLeft(2, '0')}:00';
+              
+              nouveauxCreneaux.add('$heureDebut-$heureFin');
+            }
+          }
+          
+          repairedDisponibilites[jour] = nouveauxCreneaux;
+        }
+        
+        if (needsRepair) {
+          updates['disponibilites'] = repairedDisponibilites;
+          print('🔧 Disponibilités réparées avec nouveau format HH:MM-HH:MM');
+        }
+      }
+
+      // Convertir geolocation en latitude/longitude si nécessaire
+      if (data.containsKey('geolocation') && data['geolocation'] != null) {
+        final geoPoint = data['geolocation'] as GeoPoint;
+        if (!data.containsKey('latitude')) {
+          updates['latitude'] = geoPoint.latitude;
+        }
+        if (!data.containsKey('longitude')) {
+          updates['longitude'] = geoPoint.longitude;
+        }
+      }
+
+      // Ajouter les photos vides si manquantes
+      if (!data.containsKey('photos') || data['photos'] == null) {
+        updates['photos'] = <String>[];
+      }
+
+      if (updates.isNotEmpty) {
+        await _firestore.collection('terrains').doc(terrainId).update(updates);
+        print('✅ Terrain $terrainId réparé avec ${updates.length} champs');
+      } else {
+        print('ℹ️ Terrain $terrainId déjà à jour');
+      }
+
+      return TerrainResult(
+        success: true,
+        message: 'Terrain réparé avec succès',
+      );
+    } catch (e) {
+      print('❌ Erreur repairTerrain: $e');
+      return TerrainResult(
+        success: false,
+        message: 'Erreur: ${e.toString()}',
+      );
     }
   }
 
@@ -434,14 +554,29 @@ class TerrainService {
     try {
       print('📋 Création terrain depuis données: $id');
       
+      // Support des deux formats: latitude/longitude directs ET geolocation GeoPoint
+      double latitude = 0.0;
+      double longitude = 0.0;
+      
+      if (data['latitude'] != null && data['longitude'] != null) {
+        // Format direct latitude/longitude
+        latitude = (data['latitude'] as num?)?.toDouble() ?? 0.0;
+        longitude = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+      } else if (data['geolocation'] != null) {
+        // Format GeoPoint (ancien)
+        final geoPoint = data['geolocation'] as GeoPoint?;
+        latitude = geoPoint?.latitude ?? 0.0;
+        longitude = geoPoint?.longitude ?? 0.0;
+      }
+      
       return Terrain(
         id: id,
         nom: data['nom'] ?? '',
         description: data['description'] ?? '',
         ville: data['ville'] ?? '',
         adresse: data['adresse'] ?? '',
-        latitude: (data['geolocation'] as GeoPoint?)?.latitude ?? 0.0,
-        longitude: (data['geolocation'] as GeoPoint?)?.longitude ?? 0.0,
+        latitude: latitude,
+        longitude: longitude,
         googleMapsUrl: data['googleMapsUrl'],
         gerantId: data['gerantId'] ?? '',
         photos: List<String>.from(data['photos'] ?? []),
@@ -455,6 +590,10 @@ class TerrainService {
         notemoyenne: (data['notemoyenne'] as num?)?.toDouble() ?? 0.0,
         nombreAvis: data['nombreAvis'] ?? 0,
         dateCreation: (data['dateCreation'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        estValide: data['estValide'] ?? false,
+        dateValidation: data['dateValidation'] != null 
+            ? (data['dateValidation'] as Timestamp?)?.toDate()
+            : null,
       );
     } catch (e) {
       print('❌ Erreur création terrain $id: $e');
@@ -466,27 +605,6 @@ class TerrainService {
   // Méthodes d'avis supprimées - voir AvisService
 }
 
-// 📊 Extensions pour le modèle Terrain
-extension TerrainFirestore on Terrain {
-  Map<String, dynamic> toFirestore() {
-    return {
-      'nom': nom,
-      'description': description,
-      'ville': ville,
-      'adresse': adresse,
-      'geolocation': GeoPoint(latitude, longitude),
-      'googleMapsUrl': googleMapsUrl,
-      'gerantId': gerantId,
-      'photos': photos,
-      'equipements': equipements,
-      'prixHeure': prixHeure,
-      'disponibilites': disponibilites,
-      'notemoyenne': notemoyenne,
-      'nombreAvis': nombreAvis,
-      // dateCreation géré séparément
-    };
-  }
-}
 
 // 📊 Classes de résultat
 class TerrainResult {

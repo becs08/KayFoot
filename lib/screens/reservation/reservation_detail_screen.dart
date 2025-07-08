@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kay_foot/models/reservation_extended.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../constants/app_constants.dart';
+import '../../models/enums.dart';
 import '../../models/reservation.dart';
 import '../../models/terrain.dart';
 import '../../services/terrain/terrain_service.dart';
@@ -683,7 +685,7 @@ class _ReservationDetailScreenState extends State<ReservationDetailScreen> {
             _buildDetailRow(
               icon: Icons.access_time,
               label: 'Créneau',
-              value: '${widget.reservation.heureDebut} - ${widget.reservation.heureFin}',
+              value: widget.reservation.horairesFormatted,
             ),
 
             _buildDetailRow(

@@ -13,8 +13,13 @@ import '../terrain/terrains_proches_screen.dart';
 import '../profil/profile_screen.dart';
 import '../reservation/reservations_screen.dart';
 import '../social/social_main_screen.dart';
+import '../gerant/gerant_dashboard_screen.dart';
+import '../gerant/mes_terrains_screen.dart';
+import '../qr_scanner/qr_scanner_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -79,10 +84,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = AuthService().currentUser;
       if (user != null) {
         final stats = await _statsService.calculateUserStats(user.id);
-        
+
         // Sauvegarder les statistiques dans Firestore
         await _statsService.updateUserStats(user.id);
-        
+
         if (mounted) {
           setState(() {
             _userStats = stats;
@@ -108,22 +113,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final isGerant = user?.role == UserRole.gerant;
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: [
-          _buildHomeTab(),
-          TerrainListScreen(),
-          ReservationsScreen(
-            onNavigateToTerrains: () {
-              setState(() {
-                _currentIndex = 1; // Onglet terrains
-              });
-            },
-          ),
-          const SocialMainScreen(),
-          ProfileScreen(),
-        ],
+        children: isGerant ? _buildGerantTabs() : _buildJoueurTabs(),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -135,30 +131,91 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppConstants.primaryColor,
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Accueil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer),
-            label: 'Terrains',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event_note),
-            label: 'Réservations',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Social',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
+        items: isGerant ? _buildGerantNavItems() : _buildJoueurNavItems(),
       ),
     );
+  }
+
+  List<Widget> _buildJoueurTabs() {
+    return [
+      _buildHomeTab(),
+      const TerrainListScreen(),
+      ReservationsScreen(
+        onNavigateToTerrains: () {
+          setState(() {
+            _currentIndex = 1; // Onglet terrains
+          });
+        },
+      ),
+      const SocialMainScreen(),
+      ProfileScreen(),
+    ];
+  }
+
+  List<Widget> _buildGerantTabs() {
+    return [
+      GerantDashboardScreen(),
+      MesTerrainsScreen(),
+      QRScannerScreen(),
+      ReservationsScreen(
+        onNavigateToTerrains: () {
+          setState(() {
+            _currentIndex = 1; // Onglet mes terrains
+          });
+        },
+      ),
+      ProfileScreen(),
+    ];
+  }
+
+  List<BottomNavigationBarItem> _buildJoueurNavItems() {
+    return const [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.home),
+        label: 'Accueil',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.sports_soccer),
+        label: 'Terrains',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.event_note),
+        label: 'Réservations',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.people),
+        label: 'Social',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.person),
+        label: 'Profil',
+      ),
+    ];
+  }
+
+  List<BottomNavigationBarItem> _buildGerantNavItems() {
+    return const [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard),
+        label: 'Dashboard',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.business),
+        label: 'Mes Terrains',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.qr_code_scanner),
+        label: 'Scanner',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.event_note),
+        label: 'Réservations',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.person),
+        label: 'Profil',
+      ),
+    ];
   }
 
   Widget _buildHomeTab() {
@@ -168,29 +225,29 @@ class _HomeScreenState extends State<HomeScreen> {
       child: RefreshIndicator(
         onRefresh: _loadFeaturedTerrains,
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // En-tête avec salutation
               _buildHeader(user),
 
-              SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: AppConstants.largePadding),
 
               // Barre de recherche
               _buildSearchBar(),
 
-              SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: AppConstants.largePadding),
 
               // Actions rapides
               _buildQuickActions(),
 
-              SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: AppConstants.largePadding),
 
               // Terrains en vedette
               _buildFeaturedTerrains(),
 
-              SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: AppConstants.largePadding),
 
               // Statistiques utilisateur (pour les joueurs)
               if (user?.role == UserRole.joueur) _buildUserStats(),
@@ -203,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader(User? user) {
     return Container(
-      padding: EdgeInsets.all(AppConstants.mediumPadding),
+      padding: const EdgeInsets.all(AppConstants.mediumPadding),
       decoration: BoxDecoration(
         gradient: AppConstants.primaryGradient,
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -222,14 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                SizedBox(height: AppConstants.smallPadding),
+                const SizedBox(height: AppConstants.smallPadding),
 
                 Text(
                   user?.role == UserRole.joueur
                       ? 'Prêt pour votre prochain match ?'
                       : 'Gérez vos terrains facilement',
                   style: AppConstants.bodyStyle.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withAlpha(230),
                   ),
                 ),
               ],
@@ -261,11 +318,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => TerrainListScreen()),
+          MaterialPageRoute(builder: (context) => const TerrainListScreen()),
         );
       },
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: AppConstants.mediumPadding,
           vertical: AppConstants.smallPadding,
         ),
@@ -277,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           children: [
             Icon(Icons.search, color: Colors.grey.shade600),
-            SizedBox(width: AppConstants.smallPadding),
+            const SizedBox(width: AppConstants.smallPadding),
             Text(
               'Rechercher un terrain...',
               style: AppConstants.bodyStyle.copyWith(
@@ -296,12 +353,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Actions rapides',
           style: AppConstants.subHeadingStyle,
         ),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         Row(
           children: [
@@ -318,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            SizedBox(width: AppConstants.mediumPadding),
+            const SizedBox(width: AppConstants.mediumPadding),
 
             Expanded(
               child: _buildActionCard(
@@ -339,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   } else {
                     // TODO: Navigation vers ajout de terrain
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Fonctionnalité à venir')),
+                      const SnackBar(content: Text('Fonctionnalité à venir')),
                     );
                   }
                 },
@@ -395,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(AppConstants.mediumPadding),
+        padding: const EdgeInsets.all(AppConstants.mediumPadding),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -403,14 +460,14 @@ class _HomeScreenState extends State<HomeScreen> {
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               blurRadius: 5,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppConstants.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(30),
@@ -422,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            SizedBox(height: AppConstants.smallPadding),
+            const SizedBox(height: AppConstants.smallPadding),
 
             Text(
               title,
@@ -453,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Terrains populaires',
               style: AppConstants.subHeadingStyle,
             ),
@@ -464,15 +521,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   _currentIndex = 1; // Onglet terrains
                 });
               },
-              child: Text('Voir tout'),
+              child: const Text('Voir tout'),
             ),
           ],
         ),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : _featuredTerrains.isEmpty
                 ? Center(
                     child: Text(
@@ -510,15 +567,15 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         width: 160,
-        margin: EdgeInsets.only(right: AppConstants.mediumPadding),
+        margin: const EdgeInsets.only(right: AppConstants.mediumPadding),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withAlpha(26),
               blurRadius: 5,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -529,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildTerrainImage(terrain),
 
             Padding(
-              padding: EdgeInsets.all(AppConstants.smallPadding),
+              padding: const EdgeInsets.all(AppConstants.smallPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -543,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
                   Row(
                     children: [
@@ -552,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 12,
                         color: Colors.grey.shade600,
                       ),
-                      SizedBox(width: 2),
+                      const SizedBox(width: 2),
                       Expanded(
                         child: Text(
                           terrain.ville,
@@ -568,9 +625,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   if (totalReservation != null) ...[
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppConstants.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
@@ -578,15 +635,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.event_available,
                             size: 10,
                             color: AppConstants.primaryColor,
                           ),
-                          SizedBox(width: 2),
+                          const SizedBox(width: 2),
                           Text(
                             '$totalReservation réservations',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 9,
                               color: AppConstants.primaryColor,
                               fontWeight: FontWeight.w500,
@@ -597,7 +654,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -616,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 size: 12,
                                 color: noteMoyenne > 0 ? AppConstants.accentColor : Colors.grey.shade400,
                               ),
-                              SizedBox(width: 2),
+                              const SizedBox(width: 2),
                               Text(
                                 noteMoyenne > 0 ? noteMoyenne.toStringAsFixed(1) : 'N/A',
                                 style: AppConstants.bodyStyle.copyWith(
@@ -650,15 +707,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildUserStats() {
     return Container(
-      padding: EdgeInsets.all(AppConstants.mediumPadding),
+      padding: const EdgeInsets.all(AppConstants.mediumPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withAlpha(26),
             blurRadius: 5,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -668,12 +725,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Vos statistiques',
                 style: AppConstants.subHeadingStyle,
               ),
               if (_isLoadingStats)
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -681,7 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          SizedBox(height: AppConstants.mediumPadding),
+          const SizedBox(height: AppConstants.mediumPadding),
 
           if (_isLoadingStats)
             _buildLoadingStats()

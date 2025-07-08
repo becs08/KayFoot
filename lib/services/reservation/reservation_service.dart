@@ -1,8 +1,11 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/reservation.dart';
+import '../../models/reservation_extended.dart';
+import '../../models/enums.dart';
 import '../Authentification/auth_service.dart';
 import '../profil/stats_update_service.dart';
+import '../user/user_service.dart';
 
 class ReservationService {
   // Singleton pattern
@@ -12,6 +15,7 @@ class ReservationService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final StatsUpdateService _statsService = StatsUpdateService();
+  final UserService _userService = UserService();
 
   /// 📅 Crée une nouvelle réservation avec Firestore
   Future<ReservationResult> createReservation({
@@ -225,6 +229,14 @@ class ReservationService {
               : null,
         );
       }).toList();
+
+      // Précharger les informations utilisateurs
+      final joueurIds = reservations.map((r) => r.joueurId).toSet().toList();
+      if (joueurIds.isNotEmpty) {
+        print('🚀 Préchargement de ${joueurIds.length} utilisateurs...');
+        await _userService.preloadUsersForReservations(joueurIds);
+        print('✅ Utilisateurs préchargés');
+      }
 
       return reservations;
 
@@ -442,16 +454,103 @@ class ReservationService {
     }
   }
 
+  /// 📊 Récupère TOUTES les réservations d'un gérant (sur tous ses terrains)
+  Future<List<Reservation>> getGerantReservations(String gerantId) async {
+    try {
+      print('📊 Chargement toutes réservations pour gérant: $gerantId');
+
+      // D'abord, récupérer tous les terrains du gérant
+      final terrainsQuery = await _firestore
+          .collection('terrains')
+          .where('gerantId', isEqualTo: gerantId)
+          .get();
+
+      final terrainIds = terrainsQuery.docs.map((doc) => doc.id).toList();
+      print('📊 Terrains trouvés: ${terrainIds.length}');
+
+      if (terrainIds.isEmpty) {
+        print('📊 Aucun terrain trouvé pour ce gérant');
+        return [];
+      }
+
+      // Ensuite, récupérer toutes les réservations pour ces terrains
+      List<Reservation> allReservations = [];
+
+      // Firestore limite les requêtes "whereIn" à 10 éléments
+      const batchSize = 10;
+      for (int i = 0; i < terrainIds.length; i += batchSize) {
+        final batch = terrainIds.skip(i).take(batchSize).toList();
+        
+        final reservationsQuery = await _firestore
+            .collection('reservations')
+            .where('terrainId', whereIn: batch)
+            .orderBy('dateCreation', descending: true)
+            .get();
+
+        final batchReservations = reservationsQuery.docs.map((doc) {
+          final data = doc.data();
+          final montant = data['montant'].toDouble();
+          final isPaiementAvance = data['isPaiementAvance'] ?? false;
+          return Reservation(
+            id: doc.id,
+            joueurId: data['joueurId'],
+            terrainId: data['terrainId'],
+            date: (data['date'] as Timestamp).toDate(),
+            heureDebut: data['heureDebut'],
+            heureFin: data['heureFin'],
+            montant: montant,
+            montantAvance: data['montantAvance']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : montant),
+            montantRestant: data['montantRestant']?.toDouble() ?? (isPaiementAvance ? montant * 0.5 : 0.0),
+            isPaiementAvance: isPaiementAvance,
+            statut: _parseStatut(data['statut']),
+            modePaiement: _parseModePaiement(data['modePaiement']),
+            transactionId: data['transactionId'],
+            qrCode: data['qrCode'],
+            dateCreation: (data['dateCreation'] as Timestamp).toDate(),
+            dateAnnulation: data['dateAnnulation'] != null
+                ? (data['dateAnnulation'] as Timestamp).toDate()
+                : null,
+          );
+        }).toList();
+
+        allReservations.addAll(batchReservations);
+      }
+
+      // Trier toutes les réservations par date de création (plus récentes en premier)
+      allReservations.sort((a, b) => b.dateCreation.compareTo(a.dateCreation));
+
+      print('📊 ${allReservations.length} réservation(s) trouvée(s) au total');
+
+      // Précharger les informations utilisateurs
+      final joueurIds = allReservations.map((r) => r.joueurId).toSet().toList();
+      if (joueurIds.isNotEmpty) {
+        print('🚀 Préchargement de ${joueurIds.length} utilisateurs...');
+        await _userService.preloadUsersForReservations(joueurIds);
+        print('✅ Utilisateurs préchargés');
+      }
+
+      return allReservations;
+
+    } catch (e) {
+      print('❌ Erreur getGerantReservations: $e');
+      return [];
+    }
+  }
+
   /// 📊 Récupère les réservations d'un terrain (pour le gérant)
   Future<List<Reservation>> getTerrainReservations(String terrainId) async {
     try {
+      print('📊 Chargement réservations pour terrain: $terrainId');
+
       final query = await _firestore
           .collection('reservations')
           .where('terrainId', isEqualTo: terrainId)
           .orderBy('dateCreation', descending: true)
           .get();
 
-      return query.docs.map((doc) {
+      print('📊 ${query.docs.length} réservation(s) trouvée(s) pour le terrain');
+
+      final reservations = query.docs.map((doc) {
         final data = doc.data();
         final montant = data['montant'].toDouble();
         final isPaiementAvance = data['isPaiementAvance'] ?? false;
@@ -476,6 +575,16 @@ class ReservationService {
               : null,
         );
       }).toList();
+
+      // Précharger les informations utilisateurs
+      final joueurIds = reservations.map((r) => r.joueurId).toSet().toList();
+      if (joueurIds.isNotEmpty) {
+        print('🚀 Préchargement de ${joueurIds.length} utilisateurs...');
+        await _userService.preloadUsersForReservations(joueurIds);
+        print('✅ Utilisateurs préchargés');
+      }
+
+      return reservations;
 
     } catch (e) {
       print('❌ Erreur getTerrainReservations: $e');
@@ -600,6 +709,46 @@ class ReservationService {
     } catch (e) {
       print('❌ Erreur getOccupiedSlots: $e');
       return <String>{}; // Retourner un set vide en cas d'erreur
+    }
+  }
+
+  /// 🔄 Met à jour le statut d'une réservation
+  Future<bool> updateReservationStatus(String reservationId, StatutReservation newStatus) async {
+    try {
+      print('🔄 Mise à jour statut réservation: $reservationId -> $newStatus');
+
+      final docRef = _firestore.collection('reservations').doc(reservationId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) {
+        print('❌ Réservation $reservationId non trouvée');
+        return false;
+      }
+
+      final data = doc.data()!;
+      final oldStatus = data['statut'];
+
+      // Mettre à jour dans Firestore
+      await docRef.update({
+        'statut': newStatus.toString().split('.').last,
+        'dateModification': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Statut mis à jour: $oldStatus -> ${newStatus.toString().split('.').last}');
+
+      // 📊 Mettre à jour les statistiques
+      _statsService.onReservationStatusChanged(
+        data['joueurId'], 
+        data['terrainId'], 
+        oldStatus, 
+        newStatus.toString().split('.').last
+      );
+
+      return true;
+
+    } catch (e) {
+      print('❌ Erreur updateReservationStatus: $e');
+      return false;
     }
   }
 

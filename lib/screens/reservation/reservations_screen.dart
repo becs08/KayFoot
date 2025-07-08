@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kay_foot/models/reservation_extended.dart';
 import '../../constants/app_constants.dart';
+import '../../models/enums.dart';
 import '../../models/reservation.dart';
 import '../../services/reservation/reservation_service.dart';
 import '../../services/terrain/terrain_service.dart';
@@ -463,7 +465,7 @@ class _ReservationsScreenState extends State<ReservationsScreen>
                   ),
                   SizedBox(width: 4),
                   Text(
-                    '${reservation.heureDebut} - ${reservation.heureFin}',
+                    reservation.horairesFormatted,
                     style: AppConstants.bodyStyle.copyWith(fontSize: 13),
                   ),
                 ],

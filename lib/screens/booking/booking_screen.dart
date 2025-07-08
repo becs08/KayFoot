@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
+import '../../models/enums.dart';
 import '../../models/terrain.dart';
 import '../../models/reservation.dart';
 import '../../services/reservation/reservation_service.dart';
@@ -9,7 +10,7 @@ import 'payment_screen.dart';
 class BookingScreen extends StatefulWidget {
   final Terrain terrain;
 
-  const BookingScreen({Key? key, required this.terrain}) : super(key: key);
+  const BookingScreen({super.key, required this.terrain});
 
   @override
   _BookingScreenState createState() => _BookingScreenState();
@@ -17,8 +18,8 @@ class BookingScreen extends StatefulWidget {
 
 class _BookingScreenState extends State<BookingScreen> {
   // 🆕 VARIABLES POUR MULTI-SÉLECTION
-  DateTime _selectedDate = DateTime.now().add(Duration(days: 1));
-  List<String> _selectedCreneaux = []; // 🆕 Liste des créneaux sélectionnés
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  final List<String> _selectedCreneaux = []; // 🆕 Liste des créneaux sélectionnés
   ModePaiement _selectedPaymentMethod = ModePaiement.orange;
   bool _isPaiementAvance = false; // 🆕 Option paiement en avance
 
@@ -88,8 +89,8 @@ class _BookingScreenState extends State<BookingScreen> {
   /// 🆕 SÉLECTION DE DATE AVEC RESET DES CRÉNEAUX
   Future<void> _selectDate() async {
     final now = DateTime.now();
-    final minDate = now.add(Duration(days: 1));
-    final maxDate = now.add(Duration(days: 30));
+    final minDate = now.add(const Duration(days: 1));
+    final maxDate = now.add(const Duration(days: 30));
 
     final picked = await showDatePicker(
       context: context,
@@ -100,7 +101,7 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppConstants.primaryColor,
             ),
           ),
@@ -299,49 +300,49 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Réserver'),
-        backgroundColor: Colors.transparent,
+        title: const Text('Réserver'),
+        backgroundColor: Colors.green,
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppConstants.mediumPadding),
+        padding: const EdgeInsets.all(AppConstants.mediumPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Informations du terrain
             _buildTerrainInfo(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Avertissement 24H + sélection multiple
             _buildAdvanceBookingWarning(),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
             // Sélection de la date
             _buildDateSelection(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // 🆕 SÉLECTION MULTI-CRÉNEAUX
             _buildMultiSlotSelection(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Mode de paiement
             _buildPaymentMethodSelection(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Numéro de téléphone
             _buildPhoneInput(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Récapitulatif amélioré
             _buildSummary(),
 
-            SizedBox(height: AppConstants.largePadding),
+            const SizedBox(height: AppConstants.largePadding),
 
             // Bouton de confirmation
             _buildConfirmButton(),
@@ -356,7 +357,7 @@ class _BookingScreenState extends State<BookingScreen> {
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           decoration: BoxDecoration(
             color: AppConstants.accentColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -366,12 +367,12 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.info_outline,
                 color: AppConstants.accentColor,
                 size: 20,
               ),
-              SizedBox(width: AppConstants.smallPadding),
+              const SizedBox(width: AppConstants.smallPadding),
               Expanded(
                 child: Text(
                   'Réservation minimum 24h à l\'avance. Date la plus tôt : ${_formatDate(DateTime.now().add(Duration(days: 1)))}',
@@ -385,11 +386,11 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ),
 
-        SizedBox(height: AppConstants.smallPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // 🆕 INFO MULTI-SÉLECTION
         Container(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           decoration: BoxDecoration(
             color: AppConstants.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -399,12 +400,12 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.schedule,
                 color: AppConstants.primaryColor,
                 size: 20,
               ),
-              SizedBox(width: AppConstants.smallPadding),
+              const SizedBox(width: AppConstants.smallPadding),
               Expanded(
                 child: Text(
                   'Sélectionnez jusqu\'à 3 créneaux consécutifs pour jouer plus longtemps',
@@ -424,7 +425,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildTerrainInfo() {
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(AppConstants.mediumPadding),
+        padding: const EdgeInsets.all(AppConstants.mediumPadding),
         child: Row(
           children: [
             Container(
@@ -434,14 +435,14 @@ class _BookingScreenState extends State<BookingScreen> {
                 color: AppConstants.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppConstants.smallRadius),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.sports_soccer,
                 color: AppConstants.primaryColor,
                 size: 30,
               ),
             ),
 
-            SizedBox(width: AppConstants.mediumPadding),
+            const SizedBox(width: AppConstants.mediumPadding),
 
             Expanded(
               child: Column(
@@ -452,7 +453,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
                   ),
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
                   Text(
                     widget.terrain.ville,
@@ -486,24 +487,24 @@ class _BookingScreenState extends State<BookingScreen> {
           style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
         ),
 
-        SizedBox(height: AppConstants.smallPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         InkWell(
           onTap: _selectDate,
           child: Container(
-            padding: EdgeInsets.all(AppConstants.mediumPadding),
+            padding: const EdgeInsets.all(AppConstants.mediumPadding),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
               borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.calendar_today,
                   color: AppConstants.primaryColor,
                 ),
 
-                SizedBox(width: AppConstants.mediumPadding),
+                const SizedBox(width: AppConstants.mediumPadding),
 
                 Expanded(
                   child: Text(
@@ -554,7 +555,7 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
 
             if (_isLoadingAvailability)
-              SizedBox(
+              const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
@@ -562,22 +563,22 @@ class _BookingScreenState extends State<BookingScreen> {
           ],
         ),
 
-        SizedBox(height: AppConstants.smallPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         // 🆕 LÉGENDE AMÉLIORÉE
         _buildEnhancedLegend(),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         // 🆕 PLAGE HORAIRE SÉLECTIONNÉE
         if (_selectedCreneaux.isNotEmpty)
           _buildSelectedTimeRange(),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         if (creneaux.isEmpty)
           Container(
-            padding: EdgeInsets.all(AppConstants.mediumPadding),
+            padding: const EdgeInsets.all(AppConstants.mediumPadding),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -588,7 +589,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   Icons.info_outline,
                   color: Colors.grey.shade600,
                 ),
-                SizedBox(width: AppConstants.smallPadding),
+                const SizedBox(width: AppConstants.smallPadding),
                 Text(
                   'Aucun créneau disponible pour cette date',
                   style: AppConstants.bodyStyle.copyWith(
@@ -609,8 +610,8 @@ class _BookingScreenState extends State<BookingScreen> {
               return GestureDetector(
                 onTap: isAvailable ? () => _handleSlotSelection(creneau) : null,
                 child: AnimatedContainer(
-                  duration: Duration(milliseconds: 200),
-                  padding: EdgeInsets.symmetric(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(
                     horizontal: AppConstants.mediumPadding,
                     vertical: AppConstants.smallPadding,
                   ),
@@ -625,7 +626,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       BoxShadow(
                         color: AppConstants.primaryColor.withOpacity(0.3),
                         blurRadius: 8,
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                       ),
                     ] : [],
                   ),
@@ -640,7 +641,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         color: _getSlotIconColor(isAvailable, isSelected),
                       ),
 
-                      SizedBox(width: AppConstants.smallPadding),
+                      const SizedBox(width: AppConstants.smallPadding),
 
                       Text(
                         creneau,
@@ -653,18 +654,18 @@ class _BookingScreenState extends State<BookingScreen> {
 
                       // 🆕 NUMÉRO DE SÉLECTION
                       if (isSelected) ...[
-                        SizedBox(width: AppConstants.smallPadding),
+                        const SizedBox(width: AppConstants.smallPadding),
                         Container(
                           width: 18,
                           height: 18,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               '${_selectedCreneaux.indexOf(creneau) + 1}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: AppConstants.primaryColor,
@@ -693,7 +694,7 @@ class _BookingScreenState extends State<BookingScreen> {
           label: 'Disponible',
         ),
 
-        SizedBox(width: AppConstants.mediumPadding),
+        const SizedBox(width: AppConstants.mediumPadding),
 
         _buildLegendItem(
           color: AppConstants.primaryColor,
@@ -701,7 +702,7 @@ class _BookingScreenState extends State<BookingScreen> {
           label: 'Sélectionné',
         ),
 
-        SizedBox(width: AppConstants.mediumPadding),
+        const SizedBox(width: AppConstants.mediumPadding),
 
         _buildLegendItem(
           color: Colors.grey,
@@ -715,7 +716,7 @@ class _BookingScreenState extends State<BookingScreen> {
   /// 🆕 AFFICHAGE DE LA PLAGE HORAIRE SÉLECTIONNÉE
   Widget _buildSelectedTimeRange() {
     return Container(
-      padding: EdgeInsets.all(AppConstants.mediumPadding),
+      padding: const EdgeInsets.all(AppConstants.mediumPadding),
       decoration: BoxDecoration(
         color: AppConstants.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppConstants.mediumRadius),
@@ -725,12 +726,12 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.access_time,
             color: AppConstants.primaryColor,
             size: 20,
           ),
-          SizedBox(width: AppConstants.smallPadding),
+          const SizedBox(width: AppConstants.smallPadding),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -760,7 +761,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   _selectedCreneaux.clear();
                 });
               },
-              icon: Icon(
+              icon: const Icon(
                 Icons.clear,
                 color: AppConstants.primaryColor,
                 size: 20,
@@ -781,7 +782,7 @@ class _BookingScreenState extends State<BookingScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, color: color, size: 12),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         Text(
           label,
           style: AppConstants.bodyStyle.copyWith(
@@ -826,7 +827,7 @@ class _BookingScreenState extends State<BookingScreen> {
           style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
         ),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         Column(
           children: ModePaiement.values.map((method) {
@@ -845,11 +846,11 @@ class _BookingScreenState extends State<BookingScreen> {
           }).toList(),
         ),
 
-        SizedBox(height: AppConstants.mediumPadding),
+        const SizedBox(height: AppConstants.mediumPadding),
 
         // 🆕 Option paiement en avance
         Container(
-          padding: EdgeInsets.all(AppConstants.mediumPadding),
+          padding: const EdgeInsets.all(AppConstants.mediumPadding),
           decoration: BoxDecoration(
             color: Colors.blue.shade50,
             borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -862,10 +863,10 @@ class _BookingScreenState extends State<BookingScreen> {
                 'Option de paiement',
                 style: AppConstants.subHeadingStyle.copyWith(fontSize: 14),
               ),
-              SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: AppConstants.smallPadding),
               CheckboxListTile(
-                title: Text('Payer seulement 50% maintenant'),
-                subtitle: Text('Le reste sera payé le jour du match'),
+                title: const Text('Payer seulement 50% maintenant'),
+                subtitle: const Text('Le reste sera payé le jour du match'),
                 value: _isPaiementAvance,
                 activeColor: AppConstants.primaryColor,
                 onChanged: (value) {
@@ -891,12 +892,12 @@ class _BookingScreenState extends State<BookingScreen> {
           style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
         ),
 
-        SizedBox(height: AppConstants.smallPadding),
+        const SizedBox(height: AppConstants.smallPadding),
 
         TextFormField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: '77 123 45 67',
             prefixIcon: Icon(Icons.phone),
           ),
@@ -911,7 +912,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(AppConstants.mediumPadding),
+        padding: const EdgeInsets.all(AppConstants.mediumPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -920,7 +921,7 @@ class _BookingScreenState extends State<BookingScreen> {
               style: AppConstants.subHeadingStyle.copyWith(fontSize: 16),
             ),
 
-            SizedBox(height: AppConstants.mediumPadding),
+            const SizedBox(height: AppConstants.mediumPadding),
 
             _buildSummaryRow('Terrain', widget.terrain.nom),
             _buildSummaryRow('Date', _formatDate(_selectedDate)),
@@ -935,11 +936,11 @@ class _BookingScreenState extends State<BookingScreen> {
             _buildSummaryRow('Mode de paiement', _getPaymentMethodName(_selectedPaymentMethod)),
 
             if (_selectedCreneaux.isNotEmpty) ...[
-              SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: AppConstants.smallPadding),
 
               // 🆕 DÉTAIL DES CRÉNEAUX
               Container(
-                padding: EdgeInsets.all(AppConstants.smallPadding),
+                padding: const EdgeInsets.all(AppConstants.smallPadding),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(AppConstants.smallRadius),
@@ -954,16 +955,16 @@ class _BookingScreenState extends State<BookingScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     ...List.generate(_selectedCreneaux.length, (index) {
                       final creneau = _selectedCreneaux[index];
                       return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           children: [
                             Text('${index + 1}. '),
                             Text(creneau),
-                            Spacer(),
+                            const Spacer(),
                             Text('${widget.terrain.prixHeure.toInt()} FCFA'),
                           ],
                         ),
@@ -974,16 +975,16 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ],
 
-            Divider(),
+            const Divider(),
 
             // 🆕 Affichage selon le type de paiement
             if (_isPaiementAvance) ...[
               _buildSummaryRow('Total de la réservation', '${total.toInt()} FCFA'),
               _buildSummaryRow('Avance (50%)', '${(total * 0.5).toInt()} FCFA'),
               _buildSummaryRow('Reste à payer le jour J', '${(total * 0.5).toInt()} FCFA'),
-              
-              SizedBox(height: AppConstants.smallPadding),
-              
+
+              const SizedBox(height: AppConstants.smallPadding),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1026,7 +1027,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1059,7 +1060,7 @@ class _BookingScreenState extends State<BookingScreen> {
       child: ElevatedButton(
         onPressed: canConfirm ? _proceedToPayment : null,
         child: _isLoading
-            ? CircularProgressIndicator(
+            ? const CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         )
             : Text(
@@ -1068,7 +1069,7 @@ class _BookingScreenState extends State<BookingScreen> {
               : _selectedCreneaux.isEmpty
               ? 'Sélectionnez au moins un créneau'
               : 'Créneaux indisponibles',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );

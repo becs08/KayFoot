@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user.dart' as app_models;
+import '../cache/cache_service.dart';
 
 /// Wrapper pour contourner le bug de cast PigeonUserDetails
 class FirebaseAuthWrapper {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static CacheService? _cacheService;
 
   /// Créer un compte utilisateur sans déclencher le bug de cast
   static Future<String?> createAccount(String email, String password) async {
@@ -116,15 +118,44 @@ class FirebaseAuthWrapper {
     }
   }
 
-  /// Récupérer les données utilisateur depuis Firestore
-  static Future<app_models.User?> getUserFromFirestore(String uid) async {
+  /// Initialiser le service de cache
+  static Future<void> _initCacheService() async {
+    _cacheService ??= await CacheService.getInstance();
+  }
+
+  /// Récupérer les données utilisateur depuis le cache ou Firestore
+  static Future<app_models.User?> getUserFromFirestore(String uid, {bool forceRefresh = false}) async {
     try {
+      await _initCacheService();
+
+      // Essayer de récupérer depuis le cache d'abord
+      if (!forceRefresh) {
+        final cachedData = _cacheService?.getUserProfile();
+        if (cachedData != null && cachedData['id'] == uid) {
+          print('📱 Profil utilisateur récupéré depuis le cache');
+          return app_models.User(
+            id: cachedData['id'],
+            nom: cachedData['nom'] ?? '',
+            telephone: cachedData['telephone'] ?? '',
+            email: cachedData['email'] ?? '',
+            ville: cachedData['ville'] ?? 'Dakar',
+            role: cachedData['role'] == 'gerant' ? app_models.UserRole.gerant : app_models.UserRole.joueur,
+            photo: cachedData['photo'],
+            dateCreation: DateTime.parse(cachedData['dateCreation']),
+            statistiques: Map<String, dynamic>.from(cachedData['statistiques'] ?? {}),
+            username: cachedData['username'],
+          );
+        }
+      }
+
+      // Récupérer depuis Firestore
+      print('🔥 Récupération profil utilisateur depuis Firestore');
       final doc = await _firestore.collection('users').doc(uid).get();
 
       if (!doc.exists) return null;
 
       final data = doc.data()!;
-      return app_models.User(
+      final user = app_models.User(
         id: uid,
         nom: data['nom'] ?? '',
         telephone: data['telephone'] ?? '',
@@ -136,15 +167,39 @@ class FirebaseAuthWrapper {
         statistiques: Map<String, dynamic>.from(data['statistiques'] ?? {}),
         username: data['username'],
       );
+
+      // Sauvegarder dans le cache
+      await _cacheService?.saveUserProfile({
+        'id': user.id,
+        'nom': user.nom,
+        'telephone': user.telephone,
+        'email': user.email,
+        'ville': user.ville,
+        'role': user.role.toString().split('.').last,
+        'photo': user.photo,
+        'dateCreation': user.dateCreation.toIso8601String(),
+        'statistiques': user.statistiques,
+        'username': user.username,
+      });
+
+      return user;
     } catch (e) {
       print('❌ Erreur getUserFromFirestore: $e');
       return null;
     }
   }
 
+  /// Vider le cache utilisateur (lors de la déconnexion)
+  static Future<void> clearUserCache() async {
+    await _initCacheService();
+    await _cacheService?.clearUserProfile();
+  }
+
   /// Se déconnecter
   static Future<void> signOut() async {
     try {
+      // Vider le cache avant de se déconnecter
+      await clearUserCache();
       await _auth.signOut();
     } catch (e) {
       print('❌ Erreur signOut: $e');
